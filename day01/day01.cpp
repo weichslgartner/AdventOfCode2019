@@ -1,11 +1,8 @@
 #include <iostream>
-#include <math.h>
-#include <istream>
-#include <sstream>
 #include <fstream>
 #include <assert.h>
 
-constexpr int calc_fuel(int input)
+constexpr int calc_fuel(const int input)
 {
     int result = input / 3;
     result -= 2;
@@ -14,7 +11,7 @@ constexpr int calc_fuel(int input)
     return result;
 }
 
-int calc_fuel_b(int input)
+int calc_fuel_b(const int input)
 {
     int result = 0;
     int tmp = input;
