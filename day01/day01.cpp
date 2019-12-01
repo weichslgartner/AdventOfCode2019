@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <assert.h>
 
 constexpr int calc_fuel(const int input)
 {
@@ -11,7 +10,7 @@ constexpr int calc_fuel(const int input)
     return result;
 }
 
-int calc_fuel_b(const int input)
+constexpr int calc_fuel_b(const int input)
 {
     int result = 0;
     int tmp = input;
@@ -28,16 +27,14 @@ void tests()
     static_assert(calc_fuel(14) == 2);
     static_assert(calc_fuel(1969) == 654);
     static_assert(calc_fuel(100756) == 33583);
-    assert(calc_fuel_b(1969) == 966);
-    assert(calc_fuel_b(12) == 2);
-    assert(calc_fuel_b(100756) == 50346);
+    static_assert(calc_fuel_b(1969) == 966);
+    static_assert(calc_fuel_b(12) == 2);
+    static_assert(calc_fuel_b(100756) == 50346);
 }
 
 int main()
 {
     tests();
-
-    std::string line;
     std::ifstream infile("../input_01.txt");
 
     int fuel_a = 0;
