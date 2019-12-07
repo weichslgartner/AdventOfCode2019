@@ -18,7 +18,8 @@ enum class Opcode
     HALT = 99
 };
 
-void print_vector(std::vector<int> vec)
+template <typename T>
+void print_vector(std::vector<T> vec)
 {
     for (auto v : vec)
     {
@@ -46,7 +47,6 @@ int run_programm(std::vector<int> program)
             break;
         case to_type(Opcode::HALT):
             //print_vector(program);
-
             return program[0];
 
         default:
@@ -55,6 +55,8 @@ int run_programm(std::vector<int> program)
         }
         ins_pointer += 4;
     }
+    // never reached
+    return -1;
 }
 
 void set_noun_verb(std::vector<int> &vec, int noun, int verb)
