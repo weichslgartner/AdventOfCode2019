@@ -245,34 +245,24 @@ int eval_amp(std::vector<int> vec, int i, int j, int k, int l, int m,
 {
 	int result_e = 0;
 	bool halted_e = false;
-	Interpreter inter_a{vec};
-	Interpreter inter_b{vec};
-	Interpreter inter_c{vec};
-	Interpreter inter_d{vec};
-	Interpreter inter_e{vec};
-	std::deque<int> input_a;
-	std::deque<int> input_b;
-	std::deque<int> input_c;
-	std::deque<int> input_d;
-	std::deque<int> input_e;
-	input_a.push_back(i);
-	input_b.push_back(j);
-	input_c.push_back(k);
-	input_d.push_back(l);
-	input_e.push_back(m);
-
+	std::array<Interpreter,5> interpreterz;
+	std::array<std::deque<int>,5> inputz;
+	for(int i = 0; i< 5; ++i ){
+		interpreterz[i] = vec;
+		inputz[i].push_back(phases[i]);
+	}
 	do
 	{
-		input_a.push_back(result_e);
-		auto [result_a, halted_a] = inter_a.run_programm(input_a);
-		input_b.push_back(result_a);
-		auto [result_b, halted_b] = inter_b.run_programm(input_b);
-		input_c.push_back(result_b);
-		auto [result_c, halted_c] = inter_c.run_programm(input_c);
-		input_d.push_back(result_c);
-		auto [result_d, halted_d] = inter_d.run_programm(input_d);
-		input_e.push_back(result_d);
-		std::tie(result_e, halted_e) = inter_e.run_programm(input_e);
+		inputz[0].push_back(result_e);
+		auto [result_a, halted_a] = interpreterz[0].run_programm(inputz[0]);
+		inputz[1].push_back(result_a);
+		auto [result_b, halted_b] = interpreterz[1].run_programm(inputz[1]);
+		inputz[2].push_back(result_b);
+		auto [result_c, halted_c] = interpreterz[2].run_programm(inputz[2]);
+		inputz[3].push_back(result_c);
+		auto [result_d, halted_d] = interpreterz[3].run_programm(inputz[3]);
+		inputz[4].push_back(result_d);
+		std::tie(result_e, halted_e) = interpreterz[4].run_programm(inputz[4]);
 	} while (part2 && halted_e == false);
 	return result_e;
 }
