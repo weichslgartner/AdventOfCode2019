@@ -39,9 +39,7 @@ public:
   const bool operator==(const Point &obj) const {
     return obj.x == x && obj.y == y;
   }
-  constexpr int manhattan_distance(Point p) {
-    return abs(x - p.x) + abs(y - p.y);
-  }
+  int manhattan_distance(Point p) { return abs(x - p.x) + abs(y - p.y); }
   bool operator<(const Point &rhs) const {
     return (y * 100000 + x) < (rhs.y * 100000 + rhs.x);
   }

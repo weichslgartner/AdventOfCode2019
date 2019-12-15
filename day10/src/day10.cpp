@@ -23,9 +23,7 @@ public:
   const bool operator==(const Point &obj) const {
     return obj.x == x && obj.y == y;
   }
-  constexpr int manhattan_distance(Point p) {
-    return abs(x - p.x) + abs(y - p.y);
-  }
+  int manhattan_distance(Point p) { return abs(x - p.x) + abs(y - p.y); }
 };
 
 struct PointCmp {
@@ -35,7 +33,7 @@ private:
 public:
   PointCmp(Point p) { center = p; };
 
-  constexpr bool operator()(Point a, Point b) const {
+  bool operator()(Point a, Point b) const {
     return a.manhattan_distance(center) < b.manhattan_distance(center);
   }
 };
@@ -57,9 +55,7 @@ public:
   const bool operator==(const Vektor &obj) const {
     return std::abs(obj.a1 - a1) < EPSILON && std::abs(obj.a2 - a2) < EPSILON;
   }
-  constexpr double scalar(const Vektor &v2) const {
-    return a1 * v2.a1 + a2 * v2.a2;
-  }
+  double scalar(const Vektor &v2) const { return a1 * v2.a1 + a2 * v2.a2; }
 
   constexpr Quadrant get_quadrant() const {
     if (a1 >= 0) {
@@ -77,7 +73,7 @@ public:
     }
   }
 
-  constexpr double angle(const Vektor &v2) const {
+  double angle(const Vektor &v2) const {
 
     auto base_angle =
         std::acos((scalar(v2) / (this->euclidean_norm * v2.euclidean_norm)));
@@ -92,7 +88,7 @@ public:
 
 // sort list by angle to vektor (1,0) => 0 degree
 struct VektorCmp {
-  bool operator()(Vektor a, Vektor b) {
+  bool operator()(Vektor a, Vektor b) const {
     return a.angle(Vektor{0, -1}) < b.angle(Vektor{0, -1});
   }
 };
