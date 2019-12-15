@@ -382,7 +382,7 @@ void render_identifier(std::map<Point, int> point_map) {
 }
 
 int main() {
-  // tests();
+  tests();
   std::ifstream infile("./input/input_11.txt");
   std::vector<long long int> vec;
   std::stringstream ss;
