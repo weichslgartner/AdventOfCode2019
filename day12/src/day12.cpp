@@ -127,7 +127,8 @@ int simulate(std::vector<Planet> planets, int steps, bool verbose = false) {
 
 bool is_period(std::vector<int> &arr, int begin, int period,
                int test_len = 200000) {
-  for (int i = 0; i < test_len; ++i) {
+  assert(arr.size() > 2);
+  for (int i = 0; i < std::min(test_len, static_cast<int>(arr.size())); ++i) {
     if (arr[begin + i] != arr[begin + i + period]) {
       return false;
     }
@@ -199,5 +200,5 @@ int main() {
   std::string input = ss.str();
   planets = string2vector(input);
   std::cout << "Part1: " << simulate(planets, 10) << "\n";
-  std::cout << "Part2: " << find_lcm(planets, 10000);
+  std::cout << "Part2: " << find_lcm(planets, 100000);
 }
