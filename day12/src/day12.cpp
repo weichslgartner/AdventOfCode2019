@@ -187,8 +187,7 @@ long long int find_lcm(std::vector<Planet> planets, int steps = 100000) {
     }
   }
 
-  return std::accumulate(periods.begin(), periods.end(), (long long int)1,
-                         lcm_usr);
+  return std::accumulate(periods.begin(), periods.end(), 1LL, lcm_usr);
 }
 
 int main() {
