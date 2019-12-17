@@ -150,6 +150,7 @@ int find_period(std::vector<int> &arr) {
   else
     return -1;
 }
+
 long long int lcm_usr(long long int a, long long int b) {
   return std::lcm(a, b);
 }
