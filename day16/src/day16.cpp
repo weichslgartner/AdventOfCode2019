@@ -16,7 +16,28 @@
 #include <utility>
 #include <vector>
 
-int last_digit(int numb) {
+std::vector<int> replicate_vector(std::vector<int> input, int replications) {
+  std::vector<int> output{};
+  output.reserve(input.size() * replications);
+  auto pos = output.begin();
+  for (int i = 0; i < replications; ++i) {
+    output.insert(output.end(), input.begin(), input.end());
+  }
+  return output;
+}
+
+int get_number(std::vector<int> &input, int offset, int length) {
+  assert(input.size() >= length);
+  int result{0};
+  for (int i = 0; i < length; ++i) {
+    result += input[offset + i] * std::pow(10, length - 1 - i);
+  }
+  return result;
+}
+
+int get_offset(std::vector<int> &input) { return get_number(input, 0, 7); }
+
+constexpr int last_digit(int numb) {
   if (numb < 0) {
     numb *= -1;
   }
@@ -24,7 +45,7 @@ int last_digit(int numb) {
 }
 
 std::vector<int> generate_pattern(std::vector<int> &input) {
-  unsigned int length{input.size()};
+  std::size_t length{input.size()};
   std::vector<int> pattern{};
   std::vector<int> result_pattern{};
   result_pattern.reserve(length);
@@ -39,15 +60,10 @@ std::vector<int> generate_pattern(std::vector<int> &input) {
       }
     }
     pattern.erase(pattern.begin());
-    for (auto val : pattern) {
-      //  std::cout << val;
-    }
-    //  std::cout << "=";
     auto result = 0;
     for (int i = 0; i < length; ++i) {
       result += input[i] * pattern[i];
     }
-    // std::cout << last_digit(result) << "\n";
     result_pattern.push_back(last_digit(result));
   }
   return result_pattern;
@@ -73,16 +89,46 @@ void print_vec(std::vector<int> &vec, int digits) {
   std::cout << "\n";
 }
 
-void do_fft(std::vector<int, std::allocator<int>> input, int iterations) {
+int do_fft(std::vector<int> &input, int iterations) {
   // print_vec(input);
   for (int i = 0; i < iterations; ++i) {
     input = generate_pattern(input);
   }
-  print_vec(input, 8);
+  return get_number(input, 0, 8);
+}
+
+int part_2(std::vector<int> &input, int iterations, int offset) {
+  for (int i = 0; i < iterations; ++i) {
+    int partial_sum{0};
+    for (int pos = input.size() - 1; pos >= offset; --pos) {
+      input[pos] = last_digit(partial_sum + input[pos]);
+      partial_sum = input[pos];
+    }
+  }
+  return get_number(input, offset, 8);
+}
+
+void tests() {
+  int iterations{100};
+  auto test1 = parse_input("80871224585914546619083218645595");
+  assert(do_fft(test1, iterations) == 24176176);
+  auto test2 = parse_input("19617804207202209144916044189917");
+  assert(do_fft(test2, iterations) == 73745418);
+  auto test3 = parse_input("69317163492948606335995924319873");
+  assert(do_fft(test3, iterations) == 52432133);
+  auto test4 = parse_input("03036732577212944063491565474664");
+  test4 = replicate_vector(test4, 10000);
+  assert(part_2(test4, iterations, get_offset(test4)) == 84462026);
+  auto test5 = parse_input("02935109699940807407585447034323");
+  test5 = replicate_vector(test5, 10000);
+  assert(part_2(test5, iterations, get_offset(test5)) == 78725270);
+  auto test6 = parse_input("03081770884921959731165446850517");
+  test6 = replicate_vector(test6, 10000);
+  assert(part_2(test6, iterations, get_offset(test6)) == 53553731);
 }
 
 int main() {
-  // tests();
+  tests();
   auto input = parse_input(
       "597726982086712636082407645718608667401211646927131970431728764186144116"
       "712045690684383716941980332418542932775055475210822271277680003968758255"
@@ -94,7 +140,10 @@ int main() {
       "624810525100161574728472894674105610256686375274084066153169400500604742"
       "608020004373562799103356244763303754853513732984915793647320295236641089"
       "87");
-  int iterations = 100;
-  do_fft(input, iterations);
+  int iterations{100};
+  auto input_repl = replicate_vector(input, 10000);
+  std::cout << "Part 1: " << do_fft(input, iterations) << "\n";
+  std::cout << "Part 2: "
+            << part_2(input_repl, iterations, get_offset(input_repl));
   return 0;
 }
