@@ -44,29 +44,28 @@ constexpr int last_digit(int numb) {
   return numb % 10;
 }
 
-std::vector<int> generate_pattern(std::vector<int> &input) {
-  std::size_t length{input.size()};
-  std::vector<int> pattern{};
+std::vector<std::vector<int>> generate_pattern(std::size_t size) {
+  std::size_t length{size};
   std::vector<int> result_pattern{};
   result_pattern.reserve(length);
-  pattern.reserve(length + 1);
+  std::vector<std::vector<int>> pattern;
+  pattern.reserve(size);
   std::array<int, 4> base_pattern{0, 1, 0, -1};
   for (int line = 0; line < length; ++line) {
-    pattern.clear();
+    std::vector<int> pattern_line{};
+    pattern_line.reserve(length + 1);
     for (int i = 0; i < length + 1; i++) {
       for (int j = 0; j < line + 1; ++j) {
-        if (pattern.size() < length + 1)
-          pattern.push_back(base_pattern[i % base_pattern.size()]);
+        if (pattern_line.size() < length + 1)
+          pattern_line.push_back(base_pattern[i % base_pattern.size()]);
+        else
+          break;
       }
     }
-    pattern.erase(pattern.begin());
-    auto result = 0;
-    for (int i = 0; i < length; ++i) {
-      result += input[i] * pattern[i];
-    }
-    result_pattern.push_back(last_digit(result));
+    pattern_line.erase(pattern_line.begin());
+    pattern.push_back(pattern_line);
   }
-  return result_pattern;
+  return pattern;
 }
 
 std::vector<int> parse_input(const std::string in_str) {
@@ -91,8 +90,19 @@ void print_vec(std::vector<int> &vec, int digits) {
 
 int do_fft(std::vector<int> &input, int iterations) {
   // print_vec(input);
+  const auto pattern = generate_pattern(input.size());
   for (int i = 0; i < iterations; ++i) {
-    input = generate_pattern(input);
+    std::vector<int> line_result;
+    line_result.reserve(input.size());
+    for (int line = 0; line < input.size(); ++line) {
+      const auto line_pattern = pattern[line];
+      auto result = 0;
+      for (int i = 0; i < input.size(); ++i) {
+        result += input[i] * line_pattern[i];
+      }
+      line_result.push_back(last_digit(result));
+    }
+    input = line_result;
   }
   return get_number(input, 0, 8);
 }
@@ -110,6 +120,8 @@ int part_2(std::vector<int> &input, int iterations, int offset) {
 
 void tests() {
   int iterations{100};
+  auto test0 = parse_input("12345678");
+  assert(do_fft(test0, 4) == 1029498);
   auto test1 = parse_input("80871224585914546619083218645595");
   assert(do_fft(test1, iterations) == 24176176);
   auto test2 = parse_input("19617804207202209144916044189917");
