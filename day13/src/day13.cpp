@@ -7,6 +7,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+constexpr bool VERBOSE{false};
 
 template <typename T> constexpr auto to_type(T e) {
   return static_cast<typename std::underlying_type<T>::type>(e);
@@ -69,10 +70,9 @@ public:
   std::vector<long long int> program;
   bool return_on_output; // already return if there is an output, not wait for
                          // HALT
-
   long long int extract_one_rh(Mode mode, long long position) {
-    long long int arg1{};
     long long int abs_position{};
+    check_resize(ins_pointer + position);
     if (mode == Mode::POSITION) {
       abs_position = program[ins_pointer + position];
     } else if (mode == Mode::RELATIVE) {
@@ -80,24 +80,24 @@ public:
     } else {
       abs_position = ins_pointer + position;
     }
-    if (abs_position > program.size()) {
-      program.resize(abs_position, 0);
-    }
-    arg1 = program[abs_position];
+    check_resize(abs_position);
+
+    auto arg1 = program[abs_position];
+    if (VERBOSE)
+      std::cout << arg1 << " ";
     return arg1;
   }
 
   std::pair<long long int, long long int>
   extract_two_rh(Instruction const &inst) {
-    long long int arg1{};
-    long long int arg2{};
-    arg1 = extract_one_rh(inst.arg1, 1);
-    arg2 = extract_one_rh(inst.arg2, 2);
+    auto arg1 = extract_one_rh(inst.arg1, 1);
+    auto arg2 = extract_one_rh(inst.arg2, 2);
     return std::make_pair(arg1, arg2);
   }
 
   void assing(const Mode mode, unsigned position, long long int rh) {
     long long int abs_position{};
+    check_resize(ins_pointer + position);
     if (mode == Mode::POSITION) {
       abs_position = program[ins_pointer + position];
 
@@ -106,10 +106,10 @@ public:
     } else {
       abs_position = ins_pointer + position;
     }
-    if (abs_position > program.size()) {
-      program.resize(abs_position, 0);
-    }
+    check_resize(abs_position);
     program[abs_position] = rh;
+    if (VERBOSE)
+      std::cout << abs_position << " ";
   }
 
 public:
@@ -125,6 +125,11 @@ public:
     long long int arg1{}, arg2{}, arg3{};
     while (true) {
       Instruction inst = parse_instruction(program[ins_pointer]);
+      if (VERBOSE) {
+        std::cout << "\n";
+        std::cout << to_type(inst.opcode) << " " << ins_pointer << " "
+                  << relative_base << " ";
+      }
       switch (inst.opcode) {
       case (Opcode::ADD):
         std::tie(arg1, arg2) = extract_two_rh(inst);
@@ -200,10 +205,17 @@ public:
     // never reached
     return std::make_pair(-1, false);
   }
+
+private:
+  void check_resize(long long int abs_position) {
+    if (abs_position >= program.size()) {
+      program.resize(abs_position + 1, 0LL);
+    }
+  }
 };
 
 std::vector<long long int> string2vector(std::stringstream &ss) {
-  std::vector<long long int> vec;
+  std::vector<long long int> vec{};
   long long int a{};
   while (ss >> a) {
     vec.push_back(a);
@@ -214,7 +226,7 @@ std::vector<long long int> string2vector(std::stringstream &ss) {
 }
 
 void tests() {
-  std::vector<long long int> vec;
+  std::vector<long long int> vec{};
   std::stringstream ss{};
   long long int output{};
   bool halted{};
@@ -248,18 +260,16 @@ void tests() {
 void stear_joystick(int paddle_x, int ball_x,
                     std::deque<long long int> &inputs) {
   if (paddle_x > ball_x) {
-    inputs.push_back(-1LL); //-1
-    std::cout << "left\n";
+    inputs.push_back(-1LL);
   } else if (paddle_x < ball_x) {
     inputs.push_back(1LL);
-    std::cout << "right\n";
   } else {
     inputs.push_back(0LL);
-    std::cout << "nothing\n";
   }
 }
 
-int run_program(std::vector<long long int> vec, int mem) {
+std::pair<int, int> run_program(std::vector<long long int> &vec,
+                                long long int mem) {
   vec[0] = mem;
   Interpreter interpreter{vec, true};
   std::deque<long long int> inputs{0};
@@ -270,32 +280,23 @@ int run_program(std::vector<long long int> vec, int mem) {
   int prev_y{-1};
   int paddle_x{-1};
   int ball_x{-1};
+  int score{0};
   while (!halted) {
     std::tie(output, halted) = interpreter.run_programm(inputs);
 
     outputs.push_back(output);
-    if (inputs.size() <= 1) {
-      stear_joystick(paddle_x, ball_x, inputs);
-    }
-
     if (outputs.size() == 3) {
-      for (auto val : outputs) {
-        std::cout << val << ",";
-      }
-      std::cout << "\n";
       auto x = outputs[0];
       auto y = outputs[1];
       auto tile_id = outputs[2];
       if (x == -1 && y == 0) {
-        std::cout << "score " << tile_id << "\n";
+        score = tile_id;
         outputs.clear();
-
         continue;
       }
 
       if (y < prev_y) {
         blocks = 0;
-        // std::cout << "frame\n";
       }
       switch (tile_id) {
       case to_type(TILE::WALL):
@@ -306,20 +307,15 @@ int run_program(std::vector<long long int> vec, int mem) {
         blocks++;
         break;
       case to_type(TILE::PADDLE):
-        std::cout << "paddle " << x << "," << y << "\n";
-        std::cout << interpreter.ins_pointer << "\n";
         paddle_x = x;
-        inputs.clear();
         break;
       case to_type(TILE::BALL):
-        std::cout << "ball " << x << "," << y << "\n";
         ball_x = x;
+        inputs.clear();
         stear_joystick(paddle_x, ball_x, inputs);
-
         break;
-
       default:
-        std::cout << "OOPS\n";
+        std::cout << "Invalid Element\n";
         break;
       }
 
@@ -327,38 +323,20 @@ int run_program(std::vector<long long int> vec, int mem) {
       outputs.clear();
     }
   }
-  return blocks;
+  return std::make_pair(blocks, score);
 }
-/*
-void render_identifier(std::map<Point, int> point_map) {
-  auto top_left = point_map.begin()->first;
-  auto buttom_right = point_map.rbegin()->first;
-  for (auto y = top_left.y; y <= buttom_right.y; ++y) {
-    for (auto x = top_left.x - 1; x <= buttom_right.x; ++x) {
-      Point cur_point{x, y};
-      if (point_map.find(cur_point) != point_map.end() &&
-          point_map[cur_point] == static_cast<int>(Color::WHITE)) {
-        std::cout << "█";
-      } else {
-        std::cout << " ";
-      }
-    }
-    std::cout << "\n";
-  }
-}
-*/
 
 int main() {
   tests();
   std::ifstream infile("./input/input_13.txt");
-  std::vector<long long int> vec;
-  vec.resize(vec.size() * 10, 0);
+  std::vector<long long int> vec{};
   std::stringstream ss{};
   ss << infile.rdbuf();
   vec = string2vector(ss);
-  // vec.resize(vec.size() * 10, 0);
-  // auto blocks = run_program(vec, 0);
-  // std::cout << "Part 1: " << blocks << "\n";
-  auto blocks = run_program(vec, 2);
-  std::cout << "Part 2: " << blocks << "\n";
+  vec.resize(10000, 0LL);
+  auto vec2 = vec;
+  auto [blocks1, score1] = run_program(vec, 1);
+  std::cout << "Part 1: " << blocks1 << "\n";
+  auto [blocks2, score2] = run_program(vec2, 2);
+  std::cout << "Part 2: " << score2 << "\n";
 }
