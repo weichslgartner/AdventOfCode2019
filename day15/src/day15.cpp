@@ -55,11 +55,11 @@ template <typename T> constexpr auto to_type(T e) {
   return static_cast<typename std::underlying_type<T>::type>(e);
 }
 
-enum class STATE { UNKOWN = 0, FREE = 1, WALL = 2, DEADEND = 3, OXYGEN = 4 };
+enum class State { UNKOWN = 0, FREE = 1, WALL = 2, DEADEND = 3, OXYGEN = 4 };
 
 enum class Direction { NORTH = 1, SOUTH = 2, WEST = 3, EAST = 4 };
 
-enum class DROID_OUT { WALL = 0, MOVED = 1, OXYGEN = 2 };
+enum class Droid_Out { WALL = 0, MOVED = 1, OXYGEN = 2 };
 
 enum class Opcode {
   ADD = 1,
@@ -337,7 +337,7 @@ Point dir_to_point(const Point &p1, Direction dir) {
   default:
     break;
   }
-  std::cerr << "Unkown diretion " << to_type(dir) << "\n";
+  std::cerr << "Unkown direction " << to_type(dir) << "\n";
   return Point{-1, -1};
 }
 
@@ -356,12 +356,13 @@ int calc_costs(int cur_costs, Direction dir,
   return cur_costs + 1;
 }
 
-std::array<STATE, 4> &
-get_point(std::unordered_map<Point, std::array<STATE, 4>> &point_map,
-          Point &curpoint, std::array<STATE, 4> &arr) {
+std::array<State, 4> &
+get_point(std::unordered_map<Point, std::array<State, 4>> &point_map,
+          Point &curpoint, std::array<State, 4> &arr) {
   auto found = point_map.find(curpoint);
   if (found == point_map.end()) {
-    arr.fill(STATE::UNKOWN);
+    // init with unkown neighbors
+    arr.fill(State::UNKOWN);
     point_map.insert({curpoint, arr});
   } else {
     arr = found->second;
@@ -369,13 +370,13 @@ get_point(std::unordered_map<Point, std::array<STATE, 4>> &point_map,
   return arr;
 }
 
-bool get_next_dirs(std::array<STATE, 4> const &arr,
+bool get_next_dirs(std::array<State, 4> const &arr,
                    std::vector<Direction> &next_directions) {
   // possible steps
   bool dead_end{false};
   next_directions.clear();
   for (int i = 0; i < 4; ++i) {
-    if (arr[i] == STATE::UNKOWN) {
+    if (arr[i] == State::UNKOWN) {
       // offset by 1
       next_directions.push_back(static_cast<Direction>(i + 1));
     }
@@ -384,7 +385,7 @@ bool get_next_dirs(std::array<STATE, 4> const &arr,
   if (next_directions.size() == 0) {
     dead_end = true;
     for (int i = 0; i < 4; ++i) {
-      if (arr[i] == STATE::FREE) {
+      if (arr[i] == State::FREE) {
         // offset by 1
         next_directions.push_back(static_cast<Direction>(i + 1));
       }
@@ -393,21 +394,49 @@ bool get_next_dirs(std::array<STATE, 4> const &arr,
   return dead_end;
 }
 
-int run_program(std::vector<long long int> &vec, bool stop_oxy_found) {
+int spread_oxygen(Point oxy_source,
+                  std::unordered_map<Point, std::array<State, 4>> point_map) {
+  std::deque<Point> deq{};
+  deq.push_back(oxy_source);
+  int minutes{0};
+  while (!deq.empty()) {
+    std::vector<Point> next_points{};
+    for (auto el : deq) {
+      auto arr = point_map[el];
+      for (int i = 0; i < 4; ++i) {
+        if ((arr[i] != State::WALL) && (arr[i] != State::OXYGEN)) {
+          auto next = dir_to_point(el, static_cast<Direction>(i + 1));
+          point_map.find(el)->second[i] = State::OXYGEN;
+          auto dir_back = point_to_dir(next, el);
+          point_map.find(next)->second[to_type(dir_back) - 1] = State::OXYGEN;
+          next_points.push_back(next);
+        }
+      }
+    }
+    deq.clear();
+    deq.insert(deq.end(), next_points.begin(), next_points.end());
+    minutes++;
+  }
+  return minutes - 1;
+}
+
+std::pair<Point, int>
+find_oxygen(std::vector<long long int> &vec,
+            std::unordered_map<Point, std::array<State, 4>> &point_map,
+            bool stop_oxy_found) {
   Interpreter inter{vec};
   std::vector<Direction> next_directions{};
   std::deque<long long int> inputs{};
-  std::unordered_map<Point, std::array<STATE, 4>> point_map;
+
   std::unordered_map<Point, int> cost_map;
   Point curpoint{0, 0};
   Point oxy_source{};
-  std::array<STATE, 4> arr{STATE::UNKOWN, STATE::UNKOWN, STATE::UNKOWN,
-                           STATE::UNKOWN};
+  std::array<State, 4> arr{State::UNKOWN, State::UNKOWN, State::UNKOWN,
+                           State::UNKOWN};
   point_map.insert({curpoint, arr});
   cost_map.insert({curpoint, 0});
   int cur_costs{0};
   while (true) {
-    // std::cout << curpoint << "\n";
     arr = get_point(point_map, curpoint, arr);
     // possible steps
     bool dead_end = get_next_dirs(arr, next_directions);
@@ -421,14 +450,14 @@ int run_program(std::vector<long long int> &vec, bool stop_oxy_found) {
       inputs.push_back(to_type(dir));
       std::tie(result, halted) = inter.run_programm(inputs);
       if (result == 0) {
-        arr[to_type(dir) - 1] = STATE::WALL;
+        arr[to_type(dir) - 1] = State::WALL;
         point_map[curpoint] = arr;
       } else if (result == 1) {
-        STATE cur_state{};
+        State cur_state{};
         if (dead_end)
-          cur_state = STATE::DEADEND;
+          cur_state = State::DEADEND;
         else
-          cur_state = STATE::FREE;
+          cur_state = State::FREE;
         arr[to_type(dir) - 1] = cur_state;
         cur_costs = calc_costs(cur_costs, dir, cost_map, curpoint);
         point_map[curpoint] = arr;
@@ -440,12 +469,14 @@ int run_program(std::vector<long long int> &vec, bool stop_oxy_found) {
         curpoint = next_point;
         break;
       } else if (result == 2) {
-        STATE cur_state{};
+        State cur_state{};
 
         cur_costs = calc_costs(cur_costs, dir, cost_map, curpoint);
+        /*
         std::cout << "found " << dir_to_point(curpoint, dir)
                   << " after steps:" << cur_costs << "\n";
-        cur_state = STATE::FREE;
+                  */
+        cur_state = State::FREE;
         point_map[curpoint] = arr;
         auto next_point = dir_to_point(curpoint, dir);
         arr = get_point(point_map, next_point, arr);
@@ -455,34 +486,11 @@ int run_program(std::vector<long long int> &vec, bool stop_oxy_found) {
         curpoint = next_point;
         oxy_source = curpoint;
         if (stop_oxy_found)
-          return cur_costs;
+          return std::make_pair(oxy_source, cost_map[oxy_source]);
       }
     }
   }
-  std::deque<Point> deq{};
-  deq.push_back(oxy_source);
-  int minutes{0};
-  while (!deq.empty()) {
-    std::vector<Point> next_points{};
-    for (auto el : deq) {
-      auto arr = point_map[el];
-      for (int i = 0; i < 4; ++i) {
-        if ((arr[i] != STATE::WALL) && (arr[i] != STATE::OXYGEN)) {
-          auto next = dir_to_point(el, static_cast<Direction>(i + 1));
-          point_map.find(el)->second[i] = STATE::OXYGEN;
-          auto dir_back = point_to_dir(next, el);
-          point_map.find(next)->second[to_type(dir_back) - 1] = STATE::OXYGEN;
-          next_points.push_back(next);
-        }
-      }
-    }
-    deq.clear();
-    deq.insert(deq.end(), next_points.begin(), next_points.end());
-
-    minutes++;
-  }
-  // never reached
-  return minutes - 1;
+  return std::make_pair(oxy_source, cost_map[oxy_source]);
 }
 
 int main() {
@@ -494,9 +502,10 @@ int main() {
   vec = string2vector(ss);
   vec.resize(10000, 0LL);
   auto vec2 = vec;
-  auto costs = run_program(vec, false);
-  std::cout << "Part 2: " << costs << "\n";
-  // auto [blocks2, score2] = run_program(vec2);
-  // std::cout << "Part 2: " << score2 << "\n";
+  std::unordered_map<Point, std::array<State, 4>> point_map{};
+  auto [oxy_source, costs] = find_oxygen(vec, point_map, false);
+  std::cout << "Part 1: " << costs << "\n";
+  auto minutes = spread_oxygen(oxy_source, point_map);
+  std::cout << "Part 2: " << minutes << "\n";
   return 0;
 }
