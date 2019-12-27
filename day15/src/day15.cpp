@@ -55,7 +55,7 @@ template <typename T> constexpr auto to_type(T e) {
   return static_cast<typename std::underlying_type<T>::type>(e);
 }
 
-enum class STATE { UNKOWN = 0, FREE = 1, WALL = 2, DEADEND = 3 };
+enum class STATE { UNKOWN = 0, FREE = 1, WALL = 2, DEADEND = 3, OXYGEN = 4 };
 
 enum class Direction { NORTH = 1, SOUTH = 2, WEST = 3, EAST = 4 };
 
@@ -393,13 +393,14 @@ bool get_next_dirs(std::array<STATE, 4> const &arr,
   return dead_end;
 }
 
-int run_program(std::vector<long long int> &vec) {
+int run_program(std::vector<long long int> &vec, bool stop_oxy_found) {
   Interpreter inter{vec};
   std::vector<Direction> next_directions{};
   std::deque<long long int> inputs{};
   std::unordered_map<Point, std::array<STATE, 4>> point_map;
   std::unordered_map<Point, int> cost_map;
   Point curpoint{0, 0};
+  Point oxy_source{};
   std::array<STATE, 4> arr{STATE::UNKOWN, STATE::UNKOWN, STATE::UNKOWN,
                            STATE::UNKOWN};
   point_map.insert({curpoint, arr});
@@ -410,6 +411,9 @@ int run_program(std::vector<long long int> &vec) {
     arr = get_point(point_map, curpoint, arr);
     // possible steps
     bool dead_end = get_next_dirs(arr, next_directions);
+    if (next_directions.size() == 0) {
+      break;
+    }
     long long result{0};
     bool halted{false};
     // try until
@@ -436,14 +440,49 @@ int run_program(std::vector<long long int> &vec) {
         curpoint = next_point;
         break;
       } else if (result == 2) {
-        std::cout << "found " << dir_to_point(curpoint, dir);
+        STATE cur_state{};
+
         cur_costs = calc_costs(cur_costs, dir, cost_map, curpoint);
-        return cur_costs;
+        std::cout << "found " << dir_to_point(curpoint, dir)
+                  << " after steps:" << cur_costs << "\n";
+        cur_state = STATE::FREE;
+        point_map[curpoint] = arr;
+        auto next_point = dir_to_point(curpoint, dir);
+        arr = get_point(point_map, next_point, arr);
+        auto dir_to_pred = point_to_dir(next_point, curpoint);
+        arr[to_type(dir_to_pred) - 1] = cur_state;
+        point_map[next_point] = arr;
+        curpoint = next_point;
+        oxy_source = curpoint;
+        if (stop_oxy_found)
+          return cur_costs;
       }
     }
   }
+  std::deque<Point> deq{};
+  deq.push_back(oxy_source);
+  int minutes{0};
+  while (!deq.empty()) {
+    std::vector<Point> next_points{};
+    for (auto el : deq) {
+      auto arr = point_map[el];
+      for (int i = 0; i < 4; ++i) {
+        if ((arr[i] != STATE::WALL) && (arr[i] != STATE::OXYGEN)) {
+          auto next = dir_to_point(el, static_cast<Direction>(i + 1));
+          point_map.find(el)->second[i] = STATE::OXYGEN;
+          auto dir_back = point_to_dir(next, el);
+          point_map.find(next)->second[to_type(dir_back) - 1] = STATE::OXYGEN;
+          next_points.push_back(next);
+        }
+      }
+    }
+    deq.clear();
+    deq.insert(deq.end(), next_points.begin(), next_points.end());
+
+    minutes++;
+  }
   // never reached
-  return -1;
+  return minutes - 1;
 }
 
 int main() {
@@ -455,8 +494,8 @@ int main() {
   vec = string2vector(ss);
   vec.resize(10000, 0LL);
   auto vec2 = vec;
-  auto costs = run_program(vec);
-  std::cout << "Part 1: " << costs << "\n";
+  auto costs = run_program(vec, false);
+  std::cout << "Part 2: " << costs << "\n";
   // auto [blocks2, score2] = run_program(vec2);
   // std::cout << "Part 2: " << score2 << "\n";
   return 0;
