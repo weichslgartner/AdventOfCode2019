@@ -433,6 +433,23 @@ std::string encode_path(Point &cur_point, Direction &dir,
   return result;
 }
 
+std::string
+generate_program_String(std::vector<char> const &prog,
+                        std::map<char, std::string> const &name2function_map) {
+  std::string result = "";
+  for (auto p : prog) {
+    result += p;
+    result += ",";
+  }
+  result = result.substr(0, result.size() - 1); // cut last comma
+  result += "\n";
+  for (auto el : name2function_map) {
+    result += el.second;
+    result += "\n";
+  }
+  return result;
+}
+
 std::string get_program(const std::string &input) {
   std::unordered_map<std::string, char> function2name_map{};
   std::map<char, std::string> name2function_map{};
@@ -446,27 +463,10 @@ std::string get_program(const std::string &input) {
   while (true) {
     std::string biggest_sub = "";
     int best_match{0};
-    /*
-    for (auto pos : prog_pos) {
-      if (begin >= pos.first && begin < pos.second) {
-        begin = pos.second + 1;
-        auto key = function2name_map.find(
-            input.substr(pos.first, pos.second - pos.first));
-        if (key == function2name_map.end()) {
-          std::cerr
-              << "subprogram not found; Something is really broken here\n";
-        }
-        prog.push_back(key->second);
-      }
-    }*/
     if (begin >= input.size()) {
       break;
     }
-    if (begin > 150) {
-      std::cout << "";
-    }
     for (int i = 1; i < max_len;) {
-      // auto c = input.at(begin + i - 1);
       if (input.at(begin + i - 1) == 'L' || input.at(begin + i - 1) == 'R') {
         i += 2;
       }
@@ -483,32 +483,19 @@ std::string get_program(const std::string &input) {
       auto sub = input.substr(begin, i);
       auto occs = find_occurences(input, sub);
       if (function2name_map.find(sub) != function2name_map.end()) {
-        found_occs.clear();
-        found_occs.insert(found_occs.end(), occs.begin(), occs.end());
         biggest_sub = sub;
         end = begin + i;
         break;
-      } else if (occs.size() >= 2) {
-        if (sub.size() * occs.size() > best_match) {
-          best_match = sub.size() * occs.size();
-          found_occs.clear();
-          found_occs.insert(found_occs.end(), occs.begin(), occs.end());
-          biggest_sub = sub;
-          // std::cout << biggest_sub << " " << occs.size() << "\n";
-          end = begin + i;
-        }
-      } else {
-        break;
+      } else if ((sub.size() * occs.size()) > best_match) {
+        best_match = sub.size() * occs.size();
+        biggest_sub = sub;
+        end = begin + i;
       }
 
       i += 2;
       if (begin + i > input.size()) {
         break;
       }
-    }
-    for (int o : found_occs) {
-      auto temp = std::make_pair(o, o + end - begin);
-      prog_pos.push_back(temp);
     }
     begin = end + 1;
     auto found = function2name_map.find(biggest_sub);
@@ -517,22 +504,12 @@ std::string get_program(const std::string &input) {
       name2function_map.insert({cur_key, biggest_sub});
       prog.push_back(cur_key);
       cur_key++;
+      // already  have the subprogram, push back only the func name
     } else {
       prog.push_back(found->second);
     }
   }
-  std::string result = "";
-  for (auto p : prog) {
-    result += p;
-    result += ",";
-  }
-  result = result.substr(0, result.size() - 1); // cut last comma
-  result += "\n";
-
-  for (auto el : name2function_map) {
-    result += el.second;
-    result += "\n";
-  }
+  std::string result = generate_program_String(prog, name2function_map);
   return result;
 }
 
@@ -573,17 +550,30 @@ Point parse_point_map_file(Point cur_point,
   return cur_point;
 }
 
-void part2() {
-  std::unordered_map<Point, char> point_map;
-  Point cur_point{};
-  Direction dir{};
-  cur_point = parse_point_map_file(cur_point, point_map, dir);
+auto count_dust(Point cur_point, Direction dir,
+                std::unordered_map<Point, char> const &point_map,
+                std::deque<long long int> inputs, bool halted, long long output,
+                Interpreter inter) {
   std::string result = encode_path(cur_point, dir, point_map);
+  // std::cout << result << std::endl;
   auto program = get_program(result);
-  std::cout << program;
+  // std::cout << program << std::endl;
+  for (auto const c : program) {
+    inputs.push_back(static_cast<int>(c));
+  }
+  inputs.push_back('n');
+  inputs.push_back('\n');
+  halted = false;
+  while (!halted) {
+    std::tie(output, halted) = inter.run_programm(inputs);
+    if (output < INT8_MAX)
+      std::cout << static_cast<char>(output);
+  }
+  auto dust = static_cast<long long int>(output);
+  return dust;
 }
 
-int get_picture(std::vector<long long int> &vec) {
+int get_picture(std::vector<long long int> &vec, bool part1) {
   Interpreter inter{vec};
   std::deque<long long int> inputs{};
   std::unordered_map<Point, char> point_map;
@@ -621,37 +611,23 @@ int get_picture(std::vector<long long int> &vec) {
     }
     std::cout << char_out;
   }
-  int aligment{0};
-  for (const auto &key_val : point_map) {
-    auto point = key_val.first;
-    if (count_neighbors(point_map, point) == 4) {
-      aligment += point.x * point.y;
+  if (part1) {
+    int aligment{0};
+    for (const auto &key_val : point_map) {
+      auto point = key_val.first;
+      if (count_neighbors(point_map, point) == 4) {
+        aligment += point.x * point.y;
+      }
     }
+    return aligment;
   }
 
-  std::string result = encode_path(cur_point, dir, point_map);
-  // std::cout << result << std::endl;
-  auto program = get_program(result);
-  // std::cout << program << std::endl;
-  for (auto const c : program) {
-    inputs.push_back(static_cast<int>(c));
-  }
-  inputs.push_back('n');
-  inputs.push_back('\n');
-
-  halted = false;
-  while (!halted) {
-    std::tie(output, halted) = inter.run_programm(inputs);
-    if (output < INT8_MAX)
-      std::cout << static_cast<char>(output);
-  }
-  std::cout << "\n" << static_cast<long long int>(output);
-  return aligment;
+  auto dust =
+      count_dust(cur_point, dir, point_map, inputs, halted, output, inter);
+  return dust;
 }
 
 int main() {
-  // part2();
-
   tests();
   std::ifstream infile("./input/input_17.txt");
   std::vector<long long int> vec{};
@@ -660,15 +636,10 @@ int main() {
   vec = string2vector(ss);
   vec.resize(10000, 0LL);
   auto vec2 = vec;
-
-  auto aligment = get_picture(vec);
-
-  // std::cout << "Part 1: " << aligment << "\n";
+  auto aligment = get_picture(vec, true);
+  std::cout << "Part 1: " << aligment << "\n";
   vec2[0] = 2;
-  get_picture(vec2);
-  /*
-  std::cout << "Part 2: "
-            << ""
-            << "\n";*/
+  auto dust = get_picture(vec2, false);
+  std::cout << "Part 2: " << dust << "\n";
   return 0;
 }
