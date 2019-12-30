@@ -213,14 +213,7 @@ public:
         break;
       case Opcode::INPUT:
         // assert(inputs.size() > 0);
-        if (inputs.size() == 0) {
-          char a{};
-          std::cin >> a;
-          std::cout << static_cast<int>(a);
-          inputs.push_back(a);
-        } else {
-          //  std::cout << inputs.front();
-        }
+
         temp = inputs.front();
         assing(inst.arg1, 1, temp);
         inputs.pop_front();
@@ -452,6 +445,7 @@ std::string get_program(const std::string &input) {
   std::vector<char> prog;
   while (true) {
     std::string biggest_sub = "";
+    int best_match{0};
     /*
     for (auto pos : prog_pos) {
       if (begin >= pos.first && begin < pos.second) {
@@ -495,10 +489,14 @@ std::string get_program(const std::string &input) {
         end = begin + i;
         break;
       } else if (occs.size() >= 2) {
-        found_occs.clear();
-        found_occs.insert(found_occs.end(), occs.begin(), occs.end());
-        biggest_sub = sub;
-        end = begin + i;
+        if (sub.size() * occs.size() > best_match) {
+          best_match = sub.size() * occs.size();
+          found_occs.clear();
+          found_occs.insert(found_occs.end(), occs.begin(), occs.end());
+          biggest_sub = sub;
+          // std::cout << biggest_sub << " " << occs.size() << "\n";
+          end = begin + i;
+        }
       } else {
         break;
       }
@@ -589,7 +587,7 @@ int get_picture(std::vector<long long int> &vec) {
   Interpreter inter{vec};
   std::deque<long long int> inputs{};
   std::unordered_map<Point, char> point_map;
-  char output{};
+  long long output{};
   bool halted{false};
   int x{0};
   int y{0};
@@ -597,7 +595,8 @@ int get_picture(std::vector<long long int> &vec) {
   Direction dir{};
   while (!halted) {
     std::tie(output, halted) = inter.run_programm(inputs);
-    switch (static_cast<char>(output)) {
+    auto char_out = static_cast<char>(output);
+    switch (char_out) {
     case '#':
       point_map.insert({Point{x, y}, output});
       x++;
@@ -620,7 +619,7 @@ int get_picture(std::vector<long long int> &vec) {
     default:
       break;
     }
-    std::cout << output;
+    std::cout << char_out;
   }
   int aligment{0};
   for (const auto &key_val : point_map) {
@@ -633,15 +632,20 @@ int get_picture(std::vector<long long int> &vec) {
   std::string result = encode_path(cur_point, dir, point_map);
   // std::cout << result << std::endl;
   auto program = get_program(result);
-  std::cout << program << std::endl;
+  // std::cout << program << std::endl;
   for (auto const c : program) {
-    //  inputs.push_back(c);
+    inputs.push_back(static_cast<int>(c));
   }
+  inputs.push_back('n');
+  inputs.push_back('\n');
+
   halted = false;
   while (!halted) {
     std::tie(output, halted) = inter.run_programm(inputs);
-    std::cout << output << " ";
+    if (output < INT8_MAX)
+      std::cout << static_cast<char>(output);
   }
+  std::cout << "\n" << static_cast<long long int>(output);
   return aligment;
 }
 
@@ -657,13 +661,14 @@ int main() {
   vec.resize(10000, 0LL);
   auto vec2 = vec;
 
-  //  auto aligment = get_picture(vec);
+  auto aligment = get_picture(vec);
 
   // std::cout << "Part 1: " << aligment << "\n";
   vec2[0] = 2;
   get_picture(vec2);
+  /*
   std::cout << "Part 2: "
             << ""
-            << "\n";
+            << "\n";*/
   return 0;
 }
