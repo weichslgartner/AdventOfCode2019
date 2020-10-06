@@ -1,6 +1,4 @@
 cmake_minimum_required(VERSION 3.10)
-set(CMAKE_C_COMPILER /usr/bin/gcc-9)
-set(CMAKE_CXX_COMPILER /usr/bin/g++-9)
 set(CMAKE_CXX_STANDARD 17)
 # set the project name
 project(day13)

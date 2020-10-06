@@ -5,6 +5,7 @@
 #include <sstream>
 #include <assert.h>
 #include <deque>
+#include <array>
 #include <tuple>
 
 template <typename T>
@@ -245,10 +246,12 @@ int eval_amp(std::vector<int> vec, int i, int j, int k, int l, int m,
 {
 	int result_e = 0;
 	bool halted_e = false;
-	std::array<Interpreter,5> interpreterz;
+
+	std::vector<int> phases{i,j,k,l,m};
+	std::vector<Interpreter> interpreterz;
 	std::array<std::deque<int>,5> inputz;
 	for(int i = 0; i< 5; ++i ){
-		interpreterz[i] = vec;
+		interpreterz.push_back(Interpreter(vec));
 		inputz[i].push_back(phases[i]);
 	}
 	do
