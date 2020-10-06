@@ -164,11 +164,11 @@ std::vector<PointCost> get_next_moves_pre(
     const std::unordered_map<Point, char> &point_map,
     const std::unordered_map<Point, std::deque<PointCost>> &reach_map,
     const std::unordered_map<char, Point> &POI_map, const Point &point,
-    const std::unordered_set<char> &keys,
-    const std::unordered_set<char> &locks) {
-  std::vector<PointCost> result;
+    const std::unordered_set<char> &keys, const std::unordered_set<char> &locks,
+    std::vector<PointCost> &result, std::unordered_set<char> &visited) {
+
   auto next_moves = reach_map.find(point)->second;
-  std::unordered_set<char> visited;
+
   while (!next_moves.empty()) {
     auto [dst_point, dst_costs] = next_moves.front();
     next_moves.pop_front();
@@ -183,6 +183,7 @@ std::vector<PointCost> get_next_moves_pre(
     if (keys.find(dst_type) != keys.end() ||
         locks.find(dst_type) != locks.end()) {
       auto next_next = reach_map.find(dst_point)->second;
+
       for (auto [nn_point, nn_costs] : next_next) {
         next_moves.push_back(PointCost{nn_point, nn_costs + dst_costs});
       }
@@ -223,10 +224,11 @@ get_next_moves(const std::unordered_map<Point, char> &point_map,
       assert(found != point_map.end());
       auto new_costs = update_costs(cost_map, neighbor, cost);
       if (is_key(found->second)) {
-        if (keys.find(found->second) == keys.end())
+        if (keys.find(found->second) == keys.end() &&
+            visited.find(neighbor) == visited.end())
           result.push_back({neighbor, new_costs});
-        else
-          deq.push_back({neighbor, new_costs});
+        // else
+        deq.push_back({neighbor, new_costs});
       } else if (is_lock(found->second)) {
         if (locks.find(found->second) == locks.end()) {
           // found a  new lock where we have the key
@@ -258,9 +260,13 @@ int find_min_steps(
                       LessThanExploreElement>
       deq{};
   std::unordered_set<char> init_keys;
+  init_keys.reserve(27);
   std::unordered_set<char> init_locks;
+  init_locks.reserve(27);
   ExploreElement el{init_keys, init_locks, start, 0};
   deq.push(el);
+  std::vector<PointCost> next_moves;
+  std::unordered_set<char> visited;
   int min_steps{6768}; // 6768 too high INT32_MAX
   while (!deq.empty()) {
     auto [keys, locks, cur_point, steps] = deq.top();
@@ -268,16 +274,20 @@ int find_min_steps(
 
     if (keys.size() == keys_to_find.size()) {
       if (steps < min_steps) {
-        std::cout << min_steps << " \n";
+
         min_steps = steps;
+        std::cout << min_steps << " \n";
       }
 
     } else if (steps > min_steps) { // 6768
+
       // do nothing
     } else {
+      next_moves.clear();
+      visited.clear();
       //   auto next_moves = get_next_moves(pmap, cur_point, keys, locks);
-      auto next_moves = get_next_moves_pre(point_map, reach_map, POI_map,
-                                           cur_point, keys, locks);
+      next_moves = get_next_moves_pre(point_map, reach_map, POI_map, cur_point,
+                                      keys, locks, next_moves, visited);
       //    std::cout << cur_point << " :";
       for (auto [next_point, next_cost] : next_moves) {
         //    std::cout << next_point << ";";
@@ -391,11 +401,11 @@ int main() {
     }
     std::cout << "\n";
   }
-
-  auto part1 =
-      find_min_steps(point_map, keys_to_find, reach_map, POI_map, start);
-  std::cout << "Part 1: " << part1 << "\n";
-
+  /*
+    auto part1 =
+        find_min_steps(point_map, keys_to_find, reach_map, POI_map, start);
+    std::cout << "Part 1: " << part1 << "\n";
+  */
   std::cout << "Part 2: "
             << ""
             << "\n";

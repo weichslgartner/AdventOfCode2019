@@ -9,5 +9,4 @@ set (CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitiz
 file(GLOB SOURCES src/*.cpp)
 # add the executable
 add_executable(day17 ${SOURCES})
-add_subdirectory(fmt)
 target_link_libraries(day17 PRIVATE fmt::fmt-header-only)

@@ -5,5 +5,5 @@ project(day12)
 file(GLOB SOURCES src/*.cpp)
 # add the executable
 add_executable(day12 ${SOURCES})
-find_package(fmt)
+#find_package(fmt)
 target_link_libraries(day12 fmt::fmt)
