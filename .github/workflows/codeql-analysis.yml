@@ -66,6 +66,7 @@ jobs:
     - run: |
        mkdir -p build && cd build
        pip3 install conan
+       sudo ln -s ~/.local/bin/conan /usr/bin/conan
        conan install ..
        cmake ..
        cmake --build .
