@@ -10,4 +10,4 @@ file(GLOB SOURCES src/*.cpp)
 # add the executable
 find_package(fmt)
 add_executable(day17 ${SOURCES})
-target_link_libraries(day17 PRIVATE fmt::fmt)
+target_link_libraries(day17 PRIVATE ${CONAN_LIBS})

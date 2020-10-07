@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 3.10)
 # set the project name
 project(adventofcode19)
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
-add_subdirectory(fmt)
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
+
 find_package(fmt)
 add_subdirectory(day01)
 add_subdirectory(day02)
