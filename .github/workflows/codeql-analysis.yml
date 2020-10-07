@@ -68,10 +68,14 @@ jobs:
        sudo apt update
        sudo apt install clang-10 clang++-10
        pip3 install conan
+       conan profile update settings.compiler.libcxx=libstdc++11 default
        sudo ln -s ~/.local/bin/conan /usr/bin/conan
        conan install ..
-       cmake CC=clang-10 CXX=clang++-10 ..
+       cmake ..
        cmake --build .
+     env: 
+	CC=clang-10
+	CXX=clang++-10	
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
