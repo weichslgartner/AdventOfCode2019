@@ -65,10 +65,12 @@ jobs:
 
     - run: |
        mkdir -p build && cd build
+       sudo apt update
+       sudo apt install clang-10 clang++-10
        pip3 install conan
        sudo ln -s ~/.local/bin/conan /usr/bin/conan
        conan install ..
-       cmake ..
+       cmake CC=clang-10 CXX=clang++-10 ..
        cmake --build .
 
     - name: Perform CodeQL Analysis
