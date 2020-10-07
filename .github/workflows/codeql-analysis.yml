@@ -65,7 +65,7 @@ jobs:
 
     - run: |
        mkdir -p build && cd build
-       pip install conan
+       pip3 install conan
        conan install ..
        cmake ..
        cmake --build .
