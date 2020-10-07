@@ -73,9 +73,10 @@ jobs:
        conan install ..
        cmake ..
        cmake --build .
-     env: 
-	CC: clang-10
-	CXX: clang++-10	
+
+    env:
+       CC: clang-10
+       CXX: clang++-10	
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
