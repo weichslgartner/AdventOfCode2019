@@ -69,9 +69,10 @@ jobs:
        sudo apt install clang-10 clang++-10
        pip3 install conan
        sudo ln -s ~/.local/bin/conan /usr/bin/conan
-       conan profile update settings.compiler.libcxx=libstdc++11 default
-       CC=clang-10 CXX=clang++-10 conan  install ..
-       CC=clang-10 CXX=clang++-10 cmake ..
+       conan profile new clang_profile --detect
+       conan profile update settings.compiler.libcxx=libstdc++11 clang_profile
+       conan  install .. --profile clang_profile
+       cmake ..
        cmake --build .
       env:
         CC: clang-10
