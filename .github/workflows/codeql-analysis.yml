@@ -71,7 +71,7 @@ jobs:
        sudo ln -s ~/.local/bin/conan /usr/bin/conan
        conan profile new clang_profile --detect
        conan profile update settings.compiler.libcxx=libstdc++11 clang_profile
-       conan  install .. --profile clang_profile
+       conan  install .. --profile clang_profile --build=fmt
        cmake ..
        cmake --build .
       env:
