@@ -65,8 +65,9 @@ jobs:
 
     - run: |
        mkdir -p build && cd build
+       conan install ..
        cmake ..
-       make -j4
+       cmake --build .
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
