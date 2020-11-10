@@ -73,8 +73,8 @@ jobs:
        conan profile new clang_profile --detect
        conan profile update settings.compiler.libcxx=libstdc++11 clang_profile
        conan  install .. --profile clang_profile --build=fmt
-       scan-build cmake ..
-       scan-build cmake --build . 2>&1 | tee static_analyzer_output.txt
+       scan-build-10 cmake ..
+       scan-build-10 cmake --build . 2>&1 | tee static_analyzer_output.txt
       env:
         CC: clang-10
         CXX: clang++-10
