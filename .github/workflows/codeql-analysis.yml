@@ -85,6 +85,12 @@ jobs:
       with:
         name: static_analyzer_output
         path: build/static_analyzer_output.txt 
+    - name: Archive Scan-build
+      uses: actions/upload-artifact@v2
+      with:
+        name: scan-build
+        path: /tmp/scan-build*
+
 
 
     - name: Perform CodeQL Analysis
