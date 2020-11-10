@@ -74,10 +74,15 @@ jobs:
        conan profile update settings.compiler.libcxx=libstdc++11 clang_profile
        conan  install .. --profile clang_profile --build=fmt
        cmake ..
-       cmake --build .
+       cmake --build . | tee static_analyzer_output.txt
       env:
         CC: clang-10
         CXX: clang++-10
+    - name: Archive code static analysis results
+      uses: actions/upload-artifact@v2
+      with:
+        name: static_analyzer_output
+        path: build/static_analyzer_output.txt 
 
 
     - name: Perform CodeQL Analysis
