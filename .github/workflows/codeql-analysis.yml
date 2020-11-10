@@ -66,15 +66,15 @@ jobs:
       run: |
        mkdir -p build && cd build
        sudo apt update
-       sudo apt install clang-10 clang++-10
+       sudo apt install clang-10 clang++-10 clang-tools-10 cppcheck 
        pip3 install -U pip setuptools 
        pip3 install conan
        sudo ln -s ~/.local/bin/conan /usr/bin/conan
        conan profile new clang_profile --detect
        conan profile update settings.compiler.libcxx=libstdc++11 clang_profile
        conan  install .. --profile clang_profile --build=fmt
-       cmake ..
-       cmake --build . | tee static_analyzer_output.txt
+       scan-build cmake ..
+       scan-build cmake --build . 2>&1 | tee static_analyzer_output.txt
       env:
         CC: clang-10
         CXX: clang++-10
