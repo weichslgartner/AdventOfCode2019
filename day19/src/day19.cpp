@@ -257,13 +257,13 @@ int query_program(Point const &&p, std::vector<long long int> const &vec) {
 
 int find_square(std::vector<long long int> const &vec, int size =100) {
 	auto xmin { 0 };
-	for (auto y { 100 }; y < 10000; y++) {
+	for (auto y { size*3 }; y < 10000; y++) {
 			auto x = xmin;
 			while (query_program(Point { x, y }, vec) == 0) {
 				xmin = x;
 				x++;
 			}
-			while(query_program(Point { x + size - 1, y }, vec) == 1 and query_program(Point { x, y }, vec)==1){
+			while(query_program(Point { x + size - 1, y }, vec) == 1){
 				if(query_program(Point { x , y+ size - 1 }, vec) == 1){
 					return x*10000 + y;
 				}
