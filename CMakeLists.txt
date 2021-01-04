@@ -5,8 +5,11 @@ project(adventofcode19)
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
-
+enable_testing()
 find_package(fmt)
+find_package(GTest)
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -ggdb")
 add_subdirectory(day01)
 add_subdirectory(day02)
 add_subdirectory(day03)
@@ -25,3 +28,13 @@ add_subdirectory(day15)
 add_subdirectory(day16)
 add_subdirectory(day17)
 add_subdirectory(day18)
+add_subdirectory(day19)
+add_custom_target(copy_input_files)
+add_custom_command(TARGET copy_input_files
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_SOURCE_DIR}/day*/input/input*.txt
+                ${CMAKE_BINARY_DIR}/input
+         COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_SOURCE_DIR}/day*/input*.txt
+                ${CMAKE_BINARY_DIR}/input      
+                )

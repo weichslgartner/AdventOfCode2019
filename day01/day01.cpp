@@ -35,7 +35,7 @@ void tests()
 int main()
 {
     tests();
-    std::ifstream infile("../input_01.txt");
+    std::ifstream infile("build/input/input_01.txt");
 
     int fuel_a = 0;
     int fuel_b = 0;

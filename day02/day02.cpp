@@ -92,7 +92,7 @@ void tests()
 int main()
 {
     tests();
-    std::ifstream infile("../input_02.txt");
+    std::ifstream infile("build/input/input_02.txt");
     std::vector<int> vec, temp_vec;
     std::stringstream ss;
     ss << infile.rdbuf();

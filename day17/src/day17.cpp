@@ -629,7 +629,7 @@ int get_picture(std::vector<long long int> &vec, bool part1) {
 
 int main() {
   tests();
-  std::ifstream infile("./input/input_17.txt");
+  std::ifstream infile("build/input/input_17.txt");
   std::vector<long long int> vec{};
   std::stringstream ss{};
   ss << infile.rdbuf();
