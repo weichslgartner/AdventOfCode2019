@@ -6,14 +6,13 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <cstddef>
-#include <deque>
+#include <tuple>
 #include <fstream>
 #include <functional>
-#include <iostream>
+#include <deque>
 #include <sstream>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
@@ -28,6 +27,7 @@ struct Point {
 		return abs(x - p.x) + abs(y - p.y);
 	}
 };
+
 namespace std {
 template<>
 struct hash<Point> {
@@ -52,19 +52,20 @@ struct formatter<Point> {
 };
 }
 
-std::vector<Point> get_neighbors(Point &p, std::unordered_map<Point, std::string> &point_map) {
+std::vector<Point> get_neighbors(Point const &p, std::unordered_map<Point, std::string> const &point_map) {
 	std::vector<Point> points { };
 	points.reserve(4U);
-	for (auto &point : { Point { p.x, p.y - 1 }, Point { p.x, p.y + 1 }, Point { p.x + 1, p.y }, Point { p.x - 1, p.y } }) {
-		auto it = point_map.find(point);
+	for (auto const &point : { Point { p.x, p.y - 1 }, Point { p.x, p.y + 1 }, Point { p.x - 1, p.y }, Point { p.x + 1, p.y } }) {
+		auto const it = point_map.find(point);
 		if (it != point_map.end()) {
 			points.push_back(it->first);
 		}
 	}
+
 	return points;
 }
+using portal_map_t = std::unordered_map<std::string, std::array<Point, 2U>>;
 
-constexpr auto VERBOSE { false };
 
 std::vector<std::string> read_lines(std::string const &filename) {
 	std::ifstream infile(filename);
@@ -82,8 +83,8 @@ std::vector<std::string> read_lines(std::string const &filename) {
 }
 
 auto parse_input(std::vector<std::string> &lines) {
-	auto const y_max = lines.size();
-	auto const x_max = lines.front().size();
+	int const y_max = lines.size();
+	int const x_max = lines.front().size();
 	std::unordered_map<Point, std::string> point_map { };
 	std::unordered_map<std::string, std::array<Point, 2U>> portal_map { };
 	for (auto y { 1 }; y < y_max - 1; y++) {
@@ -108,74 +109,133 @@ auto parse_input(std::vector<std::string> &lines) {
 					} else {
 						portal_map[portal][0] = Point { x, y };
 					}
-
 				}
-
 			}
 		}
 	}
-
-	return std::make_pair(point_map, portal_map);
+	return std::make_tuple(point_map, portal_map, Point { x_max, y_max });
 }
 
-bool find_paths(Point &p, std::unordered_set<Point> visited,int path_length, std::unordered_map<Point, std::string> &point_map, std::unordered_map<std::string, std::array<Point, 2U>> &portal_map, int &best_solution) {
+
+bool find_paths(Point &p, std::unordered_set<Point> visited, int path_length, std::unordered_map<Point, std::string> &point_map,
+		std::unordered_map<std::string, std::array<Point, 2U>> &portal_map, int &best_solution) {
 	//fmt::print("{} {}\n",p, path_length);
 	auto it = point_map.find(p);
-	if(it != point_map.end() and it->second == "ZZ"){
-		fmt::print("Found {}\n",path_length);
-		if(path_length < best_solution){
+	if (it != point_map.end() and it->second == "ZZ") {
+		if (path_length < best_solution) {
 			best_solution = path_length;
 		}
 		return true;
 	}
-	if(path_length > best_solution){
+	if (path_length > best_solution) {
 		return false;
 	}
 	visited.insert(p);
-	auto neighbors = get_neighbors(p, point_map);
-	for(auto n: neighbors){
-		if(visited.find(n) == visited.end()){
+	auto const neighbors = get_neighbors(p, point_map);
+	for (auto n : neighbors) {
+		if (visited.find(n) == visited.end()) {
 			auto n_it = point_map.find(n);
 			//fmt::print("neighbor: {} {}\n",n_it->first, n_it->second);
-
-			if( n_it->second != "." and n_it->second != "ZZ"){
+			if (n_it->second != "." and n_it->second != "ZZ") {
 				//fmt::print("{} {}\n",p, path_length);
 				auto portal_points = portal_map.at(n_it->second);
-				if(n == portal_points[0]){
+				if (n == portal_points[0]) {
 					n = portal_points[1];
-				}else{
+				} else {
 					n = portal_points[0];
 				}
 			}
 			auto new_len = path_length;
-			if(it->second == "."){
+			if (it->second == ".") {
 				new_len++;
 			}
-
-			find_paths(n,visited,new_len,point_map,portal_map,best_solution);
+			auto res = find_paths(n, visited, new_len, point_map, portal_map, best_solution);
+			if (res) {
+				return res;
+			}
 		}
 	}
-
 	return false;
+}
+
+
+bool is_outer(Point &p, Point const &max_point) {
+	return p.x == 1 or p.y == 1 or p.x == max_point.x - 2 or p.y == max_point.y - 2;
+
+}
+
+
+struct element {
+	Point p;
+	int path_length;
+	int level;
+
+};
+
+int find_paths_part2_iter(std::unordered_map<Point, std::string> const &point_map, portal_map_t const &portal_map, Point const &max_point) {
+	auto best_solution { INT32_MAX };
+	std::deque<element> deq { };
+	deq.emplace_back( element{ portal_map.at("AA")[0], 0, 0 });
+	std::unordered_map<int, std::unordered_set<Point>> visited;
+	while (not deq.empty()) {
+		auto el = deq.front();
+		deq.pop_front();
+		auto it = point_map.find(el.p);
+		if (it != point_map.end() and it->second == "ZZ" and el.level == 0) {
+			if (el.path_length < best_solution) {
+				best_solution = el.path_length;
+			}
+		}
+		if (el.path_length > best_solution) {
+			continue;
+		}
+		visited[el.level].insert(el.p);
+		auto const neighbors = get_neighbors(el.p, point_map);
+		for (auto n : neighbors) {
+			if (visited[el.level].find(n) == visited[el.level].end()) {
+				auto n_it = point_map.find(n);
+				auto new_len = el.path_length;
+				auto new_level = el.level;
+				// IS PORTAL
+				if (n_it->second != ".") {
+					if (is_outer(n, max_point)) {
+						if ((el.level == 0 and n_it->second != "ZZ") or (el.level != 0 and n_it->second == "ZZ")
+								or (el.level != 0 and n_it->second == "AA")) {
+							continue;
+						} else {
+							if (n_it->second != "ZZ")
+								new_level--;
+						}
+					} else {
+						new_level++;
+					}
+					auto portal_points = portal_map.at(n_it->second);
+					if (n == portal_points[0] and n_it->second != "ZZ") {
+						n = portal_points[1];
+					} else {
+						n = portal_points[0];
+					}
+				} else {
+					new_len++;
+				}
+				auto new_element = element { n, new_len, new_level };
+				deq.push_back(new_element);
+			}
+		}
+	}
+	return best_solution;
+
 }
 
 int main() {
 	constexpr auto filename { "build/input/input_20.txt" };
-
 	auto lines = read_lines(filename);
-	auto [point_map, portal_map] = parse_input(lines);
-	for (auto const &p : point_map) {
-		//fmt::print("{},{} {}\n", p.first.x, p.first.y, p.second);
-	}
-
-	for (auto const &p : portal_map) {
-		//fmt::print("{},{} {}\n", p.first, p.second[0], p.second[1]);
-	}
-	auto best_solution{INT32_MAX};
-	find_paths(portal_map["AA"][0],std::unordered_set<Point>{},0,point_map, portal_map,best_solution);
-	fmt::print("Part 1: {}\n", best_solution-1);
-
-	fmt::print("Part 2: {}\n", 0);
+	auto [point_map, portal_map, max_point] = parse_input(lines);
+	auto best_solution { INT32_MAX };
+	find_paths(portal_map["AA"][0], std::unordered_set<Point> { }, 0, point_map, portal_map, best_solution);
+	fmt::print("Part 1: {}\n", best_solution - 1);
+	best_solution = find_paths_part2_iter(point_map, portal_map, max_point);
+	fmt::print("Part 2: {}\n", best_solution - 1);
 	return EXIT_SUCCESS;
 }
 
