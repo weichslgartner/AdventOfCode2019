@@ -61,9 +61,9 @@ std::vector<Point> get_neighbors(Point const &p, std::unordered_map<Point, std::
 			points.push_back(it->first);
 		}
 	}
-
 	return points;
 }
+
 using portal_map_t = std::unordered_map<std::string, std::array<Point, 2U>>;
 
 
@@ -82,11 +82,11 @@ std::vector<std::string> read_lines(std::string const &filename) {
 	return lines;
 }
 
-auto parse_input(std::vector<std::string> &lines) {
+auto parse_input(std::vector<std::string> const &lines) {
 	int const y_max = lines.size();
 	int const x_max = lines.front().size();
 	std::unordered_map<Point, std::string> point_map { };
-	std::unordered_map<std::string, std::array<Point, 2U>> portal_map { };
+	portal_map_t portal_map { };
 	for (auto y { 1 }; y < y_max - 1; y++) {
 		for (auto x { 1 }; x < x_max - 1; x++) {
 			if (lines[y][x] == '.') {
@@ -117,8 +117,8 @@ auto parse_input(std::vector<std::string> &lines) {
 }
 
 
-bool find_paths(Point &p, std::unordered_set<Point> visited, int path_length, std::unordered_map<Point, std::string> &point_map,
-		std::unordered_map<std::string, std::array<Point, 2U>> &portal_map, int &best_solution) {
+bool find_paths(Point const &p, std::unordered_set<Point> visited, int const path_length, std::unordered_map<Point, std::string> const &point_map,
+		portal_map_t const &portal_map, int &best_solution) {
 	//fmt::print("{} {}\n",p, path_length);
 	auto it = point_map.find(p);
 	if (it != point_map.end() and it->second == "ZZ") {
