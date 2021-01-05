@@ -1,27 +1,20 @@
 #include <assert.h>
 #include <fmt/core.h>
-#include <array>
-#include <cctype>
+#include <fmt/format.h>
 #include <cstddef>
 #include <deque>
 #include <fstream>
 #include <functional>
 #include <iostream>
-#include <map>
-#include <queue>
 #include <sstream>
 #include <string>
 #include <tuple>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 struct Point {
 	int x;
 	int y;
-
-//	Point(int x_, int y_) :			x { x_ }, y { y_ } {	}
 	bool operator==(const Point &obj) const {
 		return obj.x == x && obj.y == y;
 	}
@@ -35,7 +28,7 @@ template<>
 struct hash<Point> {
 	std::size_t operator()(const Point &p) const {
 
-		return std::hash<int> { }(p.x) ^ std::hash<int> { }(p.y);
+		return (std::hash<int> { }(p.x)) + (std::hash<int> { }(p.y)<<16);
 	}
 };
 }
@@ -60,7 +53,7 @@ struct Instruction {
 	Mode arg3;
 
 public:
-	Instruction(Opcode op, Mode a1 = Mode::POSITION, Mode a2 = Mode::POSITION, Mode a3 = Mode::POSITION) {
+	explicit Instruction(Opcode op, Mode a1 = Mode::POSITION, Mode a2 = Mode::POSITION, Mode a3 = Mode::POSITION) {
 		opcode = op;
 		arg1 = a1;
 		arg2 = a2;
@@ -79,14 +72,11 @@ Instruction parse_instruction(int inst) {
 }
 
 template<typename T> void print_vector(std::vector<T> vec) {
-	for (auto v : vec) {
-		std::cout << v << " ";
-	}
-	std::cout << "\n";
+	fmt::print("{}\n", fmt::join(vec," ")   );
 }
 
 class Interpreter {
-public:
+private:
 	int ins_pointer = 0;
 	long long int relative_base = 0;
 	std::vector<long long int> outputs;
@@ -107,7 +97,7 @@ public:
 
 		auto arg1 = program[abs_position];
 		if (VERBOSE)
-			std::cout << arg1 << " ";
+			fmt::print("{} ", arg1);
 		return arg1;
 	}
 
@@ -131,14 +121,14 @@ public:
 		check_resize(abs_position);
 		program[abs_position] = rh;
 		if (VERBOSE)
-			std::cout << abs_position << " ";
+			fmt::print("{} ", abs_position);
 	}
 
 public:
-	Interpreter() {
-		return_on_output = true;
+	Interpreter():return_on_output{true}  {
+
 	}
-	Interpreter(std::vector<long long int> vec, bool rop = true) : program{std::move(vec)}, return_on_output{rop} {
+	explicit Interpreter(std::vector<long long int> vec, bool rop = true) : program{std::move(vec)}, return_on_output{rop} {
 
 	}
 	// returns output and if program is halted
@@ -148,8 +138,7 @@ public:
 		while (true) {
 			Instruction inst = parse_instruction(program[ins_pointer]);
 			if (VERBOSE) {
-				std::cout << "\n";
-				std::cout << to_type(inst.opcode) << " " << ins_pointer << " " << relative_base << " ";
+				fmt::print("\n{} {} {} ",to_type(inst.opcode),ins_pointer,relative_base);
 			}
 			switch (inst.opcode) {
 			case (Opcode::ADD):
@@ -219,7 +208,7 @@ public:
 			case Opcode::HALT:
 				return std::make_pair(outputs[outputs.size() - 1], true);
 			default:
-				std::cout << "Unkown Opcode " << program[ins_pointer] << "\n";
+				fmt::print(stderr, "Unkown Opcode {}\n", program[ins_pointer] );
 				break;
 			}
 		}
