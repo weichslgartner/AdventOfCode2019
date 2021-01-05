@@ -218,8 +218,7 @@ int find_paths_part2_iter(std::unordered_map<Point, std::string> const &point_ma
 				} else {
 					new_len++;
 				}
-				auto new_element = element { n, new_len, new_level };
-				deq.push_back(new_element);
+				deq.emplace_back(element { n, new_len, new_level });
 			}
 		}
 	}
