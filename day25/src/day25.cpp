@@ -11,6 +11,7 @@
 #include <optional>
 #include <array>
 #include <iostream>
+#include <iterator>
 
 constexpr auto VERBOSE { false };
 
