@@ -33,11 +33,8 @@ struct Instruction {
 	Mode arg3;
 
 	explicit Instruction(Opcode const op, Mode const a1 = Mode::POSITION, Mode const a2 = Mode::POSITION, Mode const a3 = Mode::POSITION) :
-		opcode{op},
-		arg1{a1},
-		arg2{a2},
-		arg3{a3}
-	{}
+			opcode { op }, arg1 { a1 }, arg2 { a2 }, arg3 { a3 } {
+	}
 };
 
 Instruction parse_instruction(int inst) {
@@ -222,7 +219,6 @@ std::vector<long long int> string2vector(std::stringstream &ss) {
 	}
 	return vec;
 }
-
 
 std::pair<long long, long long> play_game(std::vector<long long int> const &vec, bool const print = false, bool const play_interactive = false) {
 	Interpreter interpreter { vec, true };
