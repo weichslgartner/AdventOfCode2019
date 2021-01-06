@@ -269,7 +269,6 @@ std::pair<long long, long long> play_game(std::vector<long long int> const &vec,
 			} else {
 				input = commands.front();
 				commands.pop_front();
-				commands.push_back(input);
 			}
 			if (print) {
 				fmt::print("{}", input);
