@@ -33,7 +33,7 @@ struct Instruction {
 	Mode arg2;
 	Mode arg3;
 
-	explicit Instruction(Opcode op, Mode a1 = Mode::POSITION, Mode a2 = Mode::POSITION, Mode a3 = Mode::POSITION) {
+	explicit Instruction(Opcode const op, Mode const a1 = Mode::POSITION, Mode const a2 = Mode::POSITION, Mode const a3 = Mode::POSITION) {
 		opcode = op;
 		arg1 = a1;
 		arg2 = a2;
@@ -119,7 +119,7 @@ public:
 		long long int temp { 0 };
 		long long int arg1 { }, arg2 { }, arg3 { };
 		while (true) {
-
+			assert(ins_pointer >= 0);
 			Instruction inst = parse_instruction(program[ins_pointer]);
 			if (VERBOSE) {
 				fmt::print("\n{} {} {} ", to_type(inst.opcode), ins_pointer, relative_base);
@@ -209,10 +209,7 @@ private:
 		if (abs_position >= program.size()) {
 			program.resize(abs_position + 1, 0LL);
 		}
-		if (abs_position < 0) {
-			fmt::print(stderr, "ALARM pos{}\n", abs_position);
-
-		}
+		assert(abs_position > 0);
 	}
 };
 
@@ -227,12 +224,6 @@ std::vector<long long int> string2vector(std::stringstream &ss) {
 	return vec;
 }
 
-struct computer {
-	Interpreter interpreter;
-	std::deque<long long int> inputs;
-	std::deque<long long int> outputs;
-	bool halted;
-};
 
 std::pair<long long, long long> play_game(std::vector<long long int> const &vec, bool const print = false, bool const play_interactive = false) {
 	Interpreter interpreter { vec, true };
@@ -271,9 +262,9 @@ std::pair<long long, long long> play_game(std::vector<long long int> const &vec,
 			}
 		}
 		if (output_line == "Command?\n") {
-			if(play_interactive){
-			std::getline(std::cin, input);
-			}else{
+			if (play_interactive) {
+				std::getline(std::cin, input);
+			} else {
 				input = commands.front();
 				commands.pop_front();
 				commands.push_back(input);
@@ -285,7 +276,6 @@ std::pair<long long, long long> play_game(std::vector<long long int> const &vec,
 			std::transform(input.begin(), input.end(), std::back_inserter(inputs), [](auto c) {
 				return static_cast<long long>(c);
 			});
-
 		}
 		if (c == '\n') {
 			output_line = "";
@@ -302,7 +292,7 @@ int main() {
 	}
 	std::stringstream ss { };
 	ss << infile.rdbuf();
-	auto vec = string2vector(ss);
+	auto const vec = string2vector(ss);
 	auto [part1, part2] = play_game(vec);
 	fmt::print("Part1: {}\n", part1);
 	return EXIT_SUCCESS;
