@@ -8,7 +8,7 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-#include <iterator>
+#include <optional>
 #include <array>
 
 constexpr auto VERBOSE { false };
@@ -152,7 +152,7 @@ public:
 				arg1 = extract_one_rh(inst.arg1, 1);
 				outputs.push_back(arg1);
 				ins_pointer += 2;
-				if (return_on_output){
+				if (return_on_output) {
 					return std::make_pair(arg1, false);
 				}
 				break;
@@ -232,72 +232,72 @@ std::vector<long long int> string2vector(std::stringstream &ss) {
 struct computer {
 	Interpreter interpreter;
 	std::deque<long long int> inputs;
-	long long output;
 	std::deque<long long int> outputs;
 	bool halted;
 };
 
-
-std::pair<long long, long long> do_networking(std::vector<long long int>  &vec){
-	constexpr auto n_computers{50};
-	constexpr auto nat_adress{255};
+std::pair<long long, long long> do_networking(std::vector<long long int> const &vec) {
+	constexpr auto n_computers { 50 };
+	constexpr auto nat_adress { 255 };
 	std::array<computer, n_computers> computers { };
 	for (auto i { 0 }; i < n_computers; i++) {
-		computers[i] = { Interpreter { vec }, std::deque<long long int> { i }, -1, std::deque<long long int>{ }, false };
+		computers[i] = { Interpreter { vec }, std::deque<long long int> { i }, std::deque<long long int> { }, false };
 	}
-	auto nat_x{0LL};
-	auto nat_y{0LL};
-	auto part1{0LL};
-	auto part2{0LL};
-	int last_send=-1;
+	std::optional<long long> nat_x { };
+	std::optional<long long> nat_y { };
+	auto part1 { 0LL };
+	auto part2 { 0LL };
+	int last_send = -1;
 	while (true) {
-		bool idle{true};
+		bool idle { true };
 		for (auto i { 0 }; i < n_computers; i++) {
-			computers[i].output = 0;
-			while (computers[i].output != -1) {
+			auto output { 0LL };
+			while (output != -1) {
 				if (computers[i].inputs.empty()) {
 					computers[i].inputs.push_back(-1);
-				}else{
-					idle=false;
+				} else {
+					idle = false;
 				}
-				std::tie(computers[i].output, computers[i].halted) = computers[i].interpreter.run_programm(computers[i].inputs);
-				if(computers[i].output != -1)
-					computers[i].outputs.push_back(computers[i].output);
+				std::tie(output, computers[i].halted) = computers[i].interpreter.run_programm(computers[i].inputs);
+				if (output != -1)
+					computers[i].outputs.push_back(output);
 			}
 			while (computers[i].outputs.size() > 0) {
-				idle=false;
+				idle = false;
 				auto address = computers[i].outputs.front();
 				computers[i].outputs.pop_front();
-				auto X = computers[i].outputs.front();
+				auto const X = computers[i].outputs.front();
 				computers[i].outputs.pop_front();
-				auto Y = computers[i].outputs.front();
+				auto const Y = computers[i].outputs.front();
 				computers[i].outputs.pop_front();
 				if (address < n_computers) {
 					computers[address].inputs.push_back(X);
 					computers[address].inputs.push_back(Y);
-				} else if (address == nat_adress){
-					if(part1==0LL){
+				} else if (address == nat_adress) {
+					if (part1 == 0LL) {
 						part1 = Y;
 					}
 					nat_x = X;
 					nat_y = Y;
 
+				}else{
+					fmt::print(stderr, "Unknown packet for {}\n", address);
 				}
 				last_send = i;
 			}
 
-		}//end for
-		if(idle and nat_x!= 0 and nat_y != 0){
-			computers[0].inputs.push_back(nat_x);
-			computers[0].inputs.push_back(nat_y);
-			if(last_send==nat_adress){
-				part2 = nat_y;
+		} //end for
+		if (idle and nat_x and nat_y) {
+			computers[0].inputs.push_back(nat_x.value());
+			computers[0].inputs.push_back(nat_y.value());
+			if (last_send == nat_adress) {
+				part2 = nat_y.value();
 				break;
 			}
 			last_send = nat_adress;
 		}
 	}
-	return std::make_pair(part1,part2);
+	return std::make_pair(part1, part2);
 }
 
 int main() {
@@ -309,9 +309,9 @@ int main() {
 	std::stringstream ss { };
 	ss << infile.rdbuf();
 	auto vec = string2vector(ss);
-	auto [part1,part2] = do_networking(vec);
-	fmt::print("Part1: {}\n",part1);
-	fmt::print("Part2: {}\n",part2);
+	auto [part1, part2] = do_networking(vec);
+	fmt::print("Part1: {}\n", part1);
+	fmt::print("Part2: {}\n", part2);
 	return EXIT_SUCCESS;
 }
 
