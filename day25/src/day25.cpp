@@ -1,6 +1,5 @@
 #include <algorithm>
-
-#include <assert.h>
+#include <cassert>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <deque>
@@ -10,8 +9,6 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-#include <optional>
-#include <array>
 #include <iostream>
 #include <iterator>
 
@@ -35,12 +32,12 @@ struct Instruction {
 	Mode arg2;
 	Mode arg3;
 
-	explicit Instruction(Opcode const op, Mode const a1 = Mode::POSITION, Mode const a2 = Mode::POSITION, Mode const a3 = Mode::POSITION) {
-		opcode = op;
-		arg1 = a1;
-		arg2 = a2;
-		arg3 = a3;
-	}
+	explicit Instruction(Opcode const op, Mode const a1 = Mode::POSITION, Mode const a2 = Mode::POSITION, Mode const a3 = Mode::POSITION) :
+		opcode{op},
+		arg1{a1},
+		arg2{a2},
+		arg3{a3}
+	{}
 };
 
 Instruction parse_instruction(int inst) {
@@ -88,7 +85,7 @@ class Interpreter {
 		return std::make_pair(arg1, arg2);
 	}
 
-	void assing(const Mode mode, unsigned position, long long int rh) {
+	void assign(const Mode mode, unsigned position, long long int rh) {
 		long long int abs_position { };
 		check_resize(ins_pointer + position);
 		if (mode == Mode::POSITION) {
@@ -104,6 +101,13 @@ class Interpreter {
 		if (VERBOSE) {
 			fmt::print("abs pos {} ", abs_position);
 		}
+	}
+
+	void check_resize(long long int abs_position) {
+		if (abs_position >= program.size()) {
+			program.resize(abs_position + 1, 0LL);
+		}
+		assert(abs_position > 0);
 	}
 
 public:
@@ -130,13 +134,13 @@ public:
 			case (Opcode::ADD):
 				std::tie(arg1, arg2) = extract_two_rh(inst);
 				temp = arg1 + arg2;
-				assing(inst.arg3, 3, temp);
+				assign(inst.arg3, 3, temp);
 				ins_pointer += 4;
 				break;
 			case (Opcode::MULT):
 				std::tie(arg1, arg2) = extract_two_rh(inst);
 				temp = arg1 * arg2;
-				assing(inst.arg3, 3, temp);
+				assign(inst.arg3, 3, temp);
 				ins_pointer += 4;
 				break;
 			case Opcode::INPUT:
@@ -144,7 +148,7 @@ public:
 				if (inputs.empty())
 					return std::make_pair(-1, false);
 				temp = inputs.front();
-				assing(inst.arg1, 1, temp);
+				assign(inst.arg1, 1, temp);
 				inputs.pop_front();
 				ins_pointer += 2;
 				break;
@@ -175,18 +179,18 @@ public:
 			case Opcode::LT:
 				std::tie(arg1, arg2) = extract_two_rh(inst);
 				if (arg1 < arg2) {
-					assing(inst.arg3, 3, 1);
+					assign(inst.arg3, 3, 1);
 				} else {
-					assing(inst.arg3, 3, 0);
+					assign(inst.arg3, 3, 0);
 				}
 				ins_pointer += 4;
 				break;
 			case Opcode::EQ:
 				std::tie(arg1, arg2) = extract_two_rh(inst);
 				if (arg1 == arg2) {
-					assing(inst.arg3, 3, 1);
+					assign(inst.arg3, 3, 1);
 				} else {
-					assing(inst.arg3, 3, 0);
+					assign(inst.arg3, 3, 0);
 				}
 				ins_pointer += 4;
 				break;
@@ -206,13 +210,6 @@ public:
 		return std::make_pair(-1, false);
 	}
 
-private:
-	void check_resize(long long int abs_position) {
-		if (abs_position >= program.size()) {
-			program.resize(abs_position + 1, 0LL);
-		}
-		assert(abs_position > 0);
-	}
 };
 
 std::vector<long long int> string2vector(std::stringstream &ss) {
@@ -274,7 +271,7 @@ std::pair<long long, long long> play_game(std::vector<long long int> const &vec,
 				fmt::print("{}", input);
 			}
 			inputs.clear();
-			std::transform(input.begin(), input.end(), std::back_inserter(inputs), [](auto c) {
+			std::transform(input.begin(), input.end(), std::back_inserter(inputs), [](auto const c) {
 				return static_cast<long long>(c);
 			});
 		}
