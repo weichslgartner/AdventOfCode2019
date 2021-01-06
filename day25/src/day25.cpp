@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <assert.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
