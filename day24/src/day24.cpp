@@ -92,7 +92,7 @@ int cnt_active_neighbors(Point &&p, std::vector<std::string> &grid) {
 	auto const max_y { grid.size() };
 	auto const max_x { grid.front().size() };
 	auto cnt { 0 };
-	for (Point n : { Point { p.x, p.y - 1 }, Point { p.x, p.y + 1 }, Point { p.x - 1, p.y }, Point { p.x + 1, p.y } }) {
+	for (Point const &n : { Point { p.x, p.y - 1 }, Point { p.x, p.y + 1 }, Point { p.x - 1, p.y }, Point { p.x + 1, p.y } }) {
 		if (n.x >= 0 and n.y >= 0 and n.x < max_x and n.y < max_y) {
 			if (grid[n.y][n.x] == '#') {
 				cnt++;
@@ -119,7 +119,6 @@ std::vector<Point3D> get_neighbors_3D(Point3D const &p) {
 			neighbors.push_back(Point3D { 1, 2, p.z + 1 });
 		} else if (n.x == max_x) {
 			neighbors.push_back(Point3D { 3, 2, p.z + 1 });
-
 		} else if (n.y == -1) {
 			neighbors.push_back(Point3D { 2, 1, p.z + 1 });
 		} else if (n.y == max_y) {
@@ -190,7 +189,7 @@ void print_bug_grid(std::unordered_set<Point3D> const &bugs) {
 
 }
 
-unsigned part2(std::vector<std::string> &grid, int iterations) {
+unsigned part2(std::vector<std::string> const &grid, int const iterations) {
 	std::unordered_set<Point3D> bugs{};
 	std::unordered_set<Point3D> bug_neighbors{};
 	fill_bugs(grid, bugs);
@@ -221,7 +220,7 @@ unsigned part2(std::vector<std::string> &grid, int iterations) {
 	return bugs.size();
 }
 
-unsigned calc_biodiversity(std::string_view grid_string) {
+unsigned calc_biodiversity(std::string_view const grid_string) {
 	auto biodiversity { 0U };
 	size_t pos = grid_string.find('#');
 	while (pos != std::string::npos) {
