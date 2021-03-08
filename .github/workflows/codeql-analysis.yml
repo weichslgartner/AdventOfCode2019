@@ -65,6 +65,8 @@ jobs:
     - name: "build"
       run: |
        mkdir -p build && cd build
+       wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh 
+       sudo ./llvm.sh 12
        sudo apt update
        sudo apt install clang-12 clang++-12 clang-tools-12 cppcheck 
        pip3 install -U pip setuptools 
@@ -78,8 +80,8 @@ jobs:
        scan-build-11 --use-cc=clang-12 --use-c++=clang++-12 cmake -DENABLE_CLANG_TIDY=True -DENABLE_CPPCHECK=True ..
        scan-build-11 --use-cc=clang-12 --use-c++=clang++-12 cmake --build . 2>&1 | tee static_analyzer_output.txt
       env:
-        CC: clang-11
-        CXX: clang++-11
+        CC: clang-12
+        CXX: clang++-12
     - name: Archive code static analysis results
       uses: actions/upload-artifact@v2
       with:
