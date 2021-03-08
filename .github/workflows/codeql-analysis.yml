@@ -67,6 +67,9 @@ jobs:
        mkdir -p build && cd build
        wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh 
        sudo ./llvm.sh 12
+       wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+       sudo apt-get update
+       sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main"
        sudo apt update
        sudo apt install clang-12 clang++-12 clang-tools-12 cppcheck 
        pip3 install -U pip setuptools 
