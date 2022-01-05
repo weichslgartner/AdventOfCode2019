@@ -38,8 +38,8 @@ jobs:
 
     # If this run was triggered by a pull request event, then checkout
     # the head of the pull request instead of the merge commit.
-    - run: git checkout HEAD^2
-      if: ${{ github.event_name == 'pull_request' }}
+    # - run: git checkout HEAD^2
+    #  if: ${{ github.event_name == 'pull_request' }}
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
@@ -65,21 +65,26 @@ jobs:
     - name: "build"
       run: |
        mkdir -p build && cd build
+       wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh 
+       sudo ./llvm.sh 11
+       wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+       sudo apt-get update
+       sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main"
        sudo apt update
-       sudo apt install clang-10 clang++-10 clang-tools-10 cppcheck 
+       sudo apt install clang-11 clang-tools-11 cppcheck 
        pip3 install -U pip setuptools 
        pip3 install conan
        sudo ln -s ~/.local/bin/conan /usr/bin/conan
        conan profile new clang_profile --detect
        conan profile update settings.compiler=clang clang_profile
-       conan profile update settings.compiler.version=10 clang_profile
+       conan profile update settings.compiler.version=11 clang_profile
        conan profile update settings.compiler.libcxx=libstdc++11 clang_profile
        conan  install .. --profile clang_profile --build=missing  
-       scan-build-10 --use-cc=clang-10 --use-c++=clang++-10 cmake -DENABLE_CLANG_TIDY=True -DENABLE_CPPCHECK=True ..
-       scan-build-10 --use-cc=clang-10 --use-c++=clang++-10 cmake --build . 2>&1 | tee static_analyzer_output.txt
+       scan-build-11 --use-cc=clang-11 --use-c++=clang++-11 cmake -DENABLE_CLANG_TIDY=True -DENABLE_CPPCHECK=True ..
+       scan-build-11 --use-cc=clang-11 --use-c++=clang++-11 cmake --build . 2>&1 | tee static_analyzer_output.txt
       env:
-        CC: clang-10
-        CXX: clang++-10
+        CC: clang-11
+        CXX: clang++-11
     - name: Archive code static analysis results
       uses: actions/upload-artifact@v2
       with:
