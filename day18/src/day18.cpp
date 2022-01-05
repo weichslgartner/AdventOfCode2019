@@ -47,7 +47,7 @@ namespace std {
 template<>
 struct hash<Point> {
 	std::size_t operator()(const Point &p) const {
-		std::size_t val = 100000 * p.y + p.x;
+		std::size_t val = p.y << 32 + p.x;
 		return val;
 	}
 };
@@ -80,7 +80,6 @@ struct ExploreElement {
 
 	bool operator==(const ExploreElement &other) const {
 		return  std::string( keys.begin(), keys.end()) ==  std::string( other.keys.begin(), other.keys.end()) &&
-				//std::string( locks.begin(), locks.end()) ==  std::string( other.locks.begin(), other.locks.end());
 				cur_point[0] == other.cur_point[0] &&
 				cur_point[1] == other.cur_point[1] &&
 				cur_point[2] == other.cur_point[2] &&
@@ -124,7 +123,6 @@ constexpr auto to_type(T e) {
 Direction point_to_dir(const Point &src, const Point &dst) {
 	int x_diff { dst.x - src.x };
 	int y_diff { dst.y - src.y };
-	assert(std::abs(x_diff) + std::abs(y_diff) == 1);
 	if (x_diff == -1) {
 		return Direction::WEST;
 	}
@@ -243,22 +241,14 @@ std::vector<PointCost> get_next_moves_pre(const std::unordered_map<Point, char> 
 	return result;
 }
 
-std::vector<PointCost> get_next_moves(const std::unordered_map<Point, char> &point_map, const Point &start_point, const std::set<char> keys,
-		const std::set<char> locks) {
+std::vector<PointCost> get_next_moves(const std::unordered_map<Point, char> &point_map, const Point &start_point) {
 	std::deque<PointCost> deq;
 	std::vector<PointCost> result;
-
-
 	std::unordered_set<Point> visited { };
-	
 	std::unordered_map<Point, int> cost_map { };
-
 	deq.push_back( { start_point,  0,""});
 	visited.insert(start_point);
 	cost_map.insert( { start_point, 0 });
-	if(start_point.x ==5 && start_point.y == 2 ){
-		std::cout <<"gebug";
-	}
 	while (!deq.empty()) {
 		auto el = deq.front();
 		deq.pop_front();
@@ -280,8 +270,6 @@ std::vector<PointCost> get_next_moves(const std::unordered_map<Point, char> &poi
  			if (is_key(found->second) && passed_keys.find(found->second) ==std::string::npos) {
 				new_passed_keys += found->second;
 			}
-
-
 			if (visited.find(neighbor) == visited.end()) {
 				
 				deq.push_back( { neighbor, new_costs, new_needed_locks, new_passed_keys});
@@ -300,9 +288,7 @@ int find_min_steps(const std::unordered_map<Point, char> &point_map, std::set<ch
 		const std::unordered_map<Point, std::vector<PointCost>> &reach_map, const std::unordered_map<char, Point> &POI_map, std::vector<Point> &start) {
 	std::priority_queue<ExploreElement, std::vector<ExploreElement>, LessThanExploreElement> deq { };
 	std::set<char> init_keys;
-	//init_keys.reserve(27);
 	std::set<char> init_locks;
-	//init_locks.reserve(27);
 	ExploreElement el { init_keys, init_locks, std::array<Point,4>{start[0],start[1],start[2],start[3]}, 0 };
 	deq.push(el);
 	std::vector<PointCost> next_moves;
@@ -312,23 +298,14 @@ int find_min_steps(const std::unordered_map<Point, char> &point_map, std::set<ch
 	while (!deq.empty()) {
 		auto el = deq.top();
 		deq.pop();
-
-		
 		auto [keys, locks, cur_point, steps] = el;
-		std::cout << cur_point[0] << cur_point[1]<<cur_point[2]<<cur_point[3] << " " << point_map.find(cur_point[0])->second << " " << std::string(keys.begin(),keys.end()) <<" " << steps << '\n';
-		/* for(auto &ve : visited_elements){
-			std::cout << ve.first << " " << ve.second << " ";
-		}
-		std::cout << '\n'; */
 		if (keys.size() == keys_to_find.size()) {
 			if (steps < min_steps) {
 				min_steps = steps;
 				std::cout << min_steps << " \n";
 				return min_steps;
 			}
-
 		} else if (steps > min_steps) {  // 6768
-
 			// do nothing
 		} else {
 			next_moves.clear();
@@ -365,7 +342,6 @@ int find_min_steps(const std::unordered_map<Point, char> &point_map, std::set<ch
 				}else{
 					fmt::print("should not happen");
 				}
-
 				if (visited_elements.find(next_el) != visited_elements.end() && visited_elements[next_el] <= next_el.steps){
 					continue;
 				}
@@ -458,7 +434,7 @@ std::unordered_map<Point, std::vector<PointCost>>   create_reach_map(const std::
 			keys.insert(src_key);
 		}
 		std::cout << src_key << src_point << std::endl;
-		auto next_moves = get_next_moves(point_map, src_point, keys, locks);
+		auto next_moves = get_next_moves(point_map, src_point);
 		for (auto const &next_move : next_moves) {
 			reach_map.find(src_point)->second.push_back(next_move);
 		}
