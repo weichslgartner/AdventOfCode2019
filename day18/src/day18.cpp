@@ -8,12 +8,14 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <queue>
 #include <sstream>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include <vector>
 
 constexpr bool VERBOSE { false };
@@ -45,8 +47,7 @@ namespace std {
 template<>
 struct hash<Point> {
 	std::size_t operator()(const Point &p) const {
-		std::size_t val { 0 };
-		val = 100000 * p.y + p.x;
+		std::size_t val = 100000 * p.y + p.x;
 		return val;
 	}
 };
@@ -62,23 +63,50 @@ struct hash<std::pair<T1, T2>> {
 struct PointCost {
 	Point point;
 	int cost;
+	std::string locks;
 };
 
 std::ostream& operator<<(std::ostream &out, PointCost const &p) {
-	out << p.point << ":" << p.cost << ";";
+	out << p.point << ":" << p.cost <<  p.locks << ";";
 	return out;
 }
 
 struct ExploreElement {
-	std::unordered_set<char> keys;
-	std::unordered_set<char> locks;
+	std::set<char> keys;
+	std::set<char> locks;
 	Point cur_point;
 	int steps;
+
+	bool operator==(const ExploreElement &other) const {
+		return  std::string( keys.begin(), keys.end()) ==  std::string( other.keys.begin(), other.keys.end()) &&
+				std::string( locks.begin(), locks.end()) ==  std::string( other.locks.begin(), other.locks.end());
+				//&&	cur_point == other.cur_point;
+	}
 };
+
+std::ostream& operator<<(std::ostream &out, ExploreElement const &ee) {
+	out << "keys " << std::string( ee.keys.begin(), ee.keys.end()) << " locks " << std::string( ee.locks.begin(), ee.locks.end()) << " " << ee.cur_point;
+	return out;
+}
+
+
+namespace std {
+template<>
+struct hash<ExploreElement> {
+	std::size_t operator()(const ExploreElement &e) const {
+		//std::size_t val { 0 };
+		std::string keys = std::string( e.keys.begin(), e.keys.end());
+		std::string locks = std::string( e.locks.begin(), e.locks.end());
+		std::size_t val = std::hash<std::string>{}(keys) ^ std::hash<std::string>{}(locks) ;  
+		return val;
+	}
+};
+}
+
 
 struct LessThanExploreElement {
 	bool operator()(const ExploreElement &lhs, const ExploreElement &rhs) const {
-		return lhs.steps < rhs.steps;
+		return lhs.keys.size()*10+lhs.locks.size() + lhs.steps  >  rhs.keys.size()*10+rhs.locks.size() + rhs.steps;
 	}
 };
 struct PointCmp {
@@ -175,80 +203,71 @@ int update_costs(std::unordered_map<Point, int> &cost_map, const Point &neighbor
 
 std::vector<PointCost> get_next_moves_pre(const std::unordered_map<Point, char> &point_map,
 		const std::unordered_map<Point, std::vector<PointCost>> &reach_map, const std::unordered_map<char, Point> &POI_map, const Point &point,
-		const std::unordered_set<char> &keys, const std::unordered_set<char> &locks, std::vector<PointCost> &result,
-		std::unordered_set<char> &visited) {
+		const std::set<char> &keys, const std::set<char> &locks, std::vector<PointCost> &result,
+		std::set<char> &visited) {
 	auto next_moves = reach_map.find(point)->second;
 
-	while (!next_moves.empty()) {
-		auto [dst_point, dst_costs] = next_moves.front();
-		next_moves.erase(next_moves.begin());
+	for(auto &move : next_moves) {
+		auto [dst_point, dst_costs, needed_locks] = move;
 		auto dst_type = point_map.find(dst_point)->second;
-		if (visited.find(dst_type) != visited.end()) {
-			continue;
-		} else {
-			visited.insert(dst_type);
-		}
-		// heck if we already visited this point
-		if (keys.find(dst_type) != keys.end() || locks.find(dst_type) != locks.end()) {
-			auto next_next = reach_map.find(dst_point)->second;
-
-			for (auto [nn_point, nn_costs] : next_next) {
-				next_moves.push_back(PointCost { nn_point, nn_costs + dst_costs });
+		bool have_all_keys = true;
+		for(auto c :needed_locks){
+			if(keys.find(std::tolower(c)) == keys.end()) {
+				have_all_keys = false;
+				break;
 			}
-		} else {
-			if (is_lock(dst_type)) {
-				if (locks.find(dst_type) == locks.end()) {
-					// found a  new lock where we have the key
-					auto need_key = std::tolower(dst_type);
-					if (keys.find(need_key) != keys.end()) {
-						result.push_back(PointCost { dst_point, dst_costs });
-					}
-				}
-			} else {
+		}
+		if(!have_all_keys){
+			continue;
+		}
+		if(is_key(dst_type) && keys.find(dst_type) != keys.end()) {
+			continue;
+		}
+		if (is_lock(dst_type)) {
+			if(locks.find(dst_type) != locks.end()){
+				continue;
+			}
+			// found a  new lock where we have the key
+			auto need_key = std::tolower(dst_type);
+			if (keys.find(need_key) != keys.end()) {
 				result.push_back(PointCost { dst_point, dst_costs });
 			}
+			
 		}
+		result.push_back(PointCost { dst_point, dst_costs });
+		
+		
 	}
 	return result;
 }
 
-std::vector<PointCost> get_next_moves(const std::unordered_map<Point, char> &point_map, const Point &start_point, const std::unordered_set<char> keys,
-		const std::unordered_set<char> locks) {
+std::vector<PointCost> get_next_moves(const std::unordered_map<Point, char> &point_map, const Point &start_point, const std::set<char> keys,
+		const std::set<char> locks) {
 	std::deque<PointCost> deq;
 	std::vector<PointCost> result;
-	deq.push_back( { start_point, 0 });
+	deq.push_back( { start_point,  0,""});
 	std::unordered_set<Point> visited { };
 	visited.insert(start_point);
 	std::unordered_map<Point, int> cost_map { };
 	cost_map.insert( { start_point, 0 });
 	while (!deq.empty()) {
-		auto [cur_point, cost] = deq.front();
+		auto el = deq.front();
 		deq.pop_front();
+		auto [cur_point, cost, needed_locks] = el;
+		auto found = point_map.find(cur_point);
+		if((is_lock(found->second) ||is_key(found->second))  && cost != 0){
+			result.push_back(el);
+		}
 		auto neighbors = get_avail_neighbors(point_map, cur_point);
 		for (auto neighbor : neighbors) {
 			auto found = point_map.find(neighbor);
 			assert(found != point_map.end());
 			auto new_costs = update_costs(cost_map, neighbor, cost);
-			if (is_key(found->second)) {
-				if (keys.find(found->second) == keys.end() && visited.find(neighbor) == visited.end())
-					result.push_back( { neighbor, new_costs });
-				// else
-				deq.push_back( { neighbor, new_costs });
-			} else if (is_lock(found->second)) {
-				if (locks.find(found->second) == locks.end()) {
-					// found a  new lock where we have the key
-					// auto need_key = std::tolower(found->second);
-					//   if (keys.find(need_key) != keys.end()) {
-					if (visited.find(neighbor) == visited.end())
-						result.push_back( { neighbor, new_costs });
-					//    }
-				} else {
-					// already solved this lock, treat is as an empty space
-					deq.push_back( { neighbor, new_costs });
-				}
-
-			} else if (visited.find(neighbor) == visited.end()) {
-				deq.push_back( { neighbor, new_costs });
+ 			if (is_lock(found->second) && needed_locks.find(found->second) ==std::string::npos) {
+				needed_locks += found->second;
+			}
+			if (visited.find(neighbor) == visited.end()) {
+				deq.push_back( { neighbor, new_costs, needed_locks });
 			}
 			visited.insert(neighbor);
 		}
@@ -256,22 +275,39 @@ std::vector<PointCost> get_next_moves(const std::unordered_map<Point, char> &poi
 	return result;
 }
 
-int find_min_steps(const std::unordered_map<Point, char> &point_map, std::unordered_set<char> &keys_to_find,
+
+
+
+
+int find_min_steps(const std::unordered_map<Point, char> &point_map, std::set<char> &keys_to_find,
 		const std::unordered_map<Point, std::vector<PointCost>> &reach_map, const std::unordered_map<char, Point> &POI_map, Point start) {
 	std::priority_queue<ExploreElement, std::vector<ExploreElement>, LessThanExploreElement> deq { };
-	std::unordered_set<char> init_keys;
-	init_keys.reserve(27);
-	std::unordered_set<char> init_locks;
-	init_locks.reserve(27);
+	std::set<char> init_keys;
+	//init_keys.reserve(27);
+	std::set<char> init_locks;
+	//init_locks.reserve(27);
 	ExploreElement el { init_keys, init_locks, start, 0 };
 	deq.push(el);
 	std::vector<PointCost> next_moves;
-	std::unordered_set<char> visited;
-	int min_steps { 6768 };  // 6768 too high INT32_MAX
+	std::set<char> visited;
+	std::unordered_map<std::string,std::pair<std::string,int>> visited_elements{};
+	int min_steps { 4845 };  // 4844 too high 6768 too high INT32_MAX
 	while (!deq.empty()) {
-		auto [keys, locks, cur_point, steps] = deq.top();
+		auto el = deq.top();
 		deq.pop();
 
+		
+		auto [keys, locks, cur_point, steps] = el;
+		std::cout << point_map.find(cur_point)->second  << " " << el << '\n'; 
+		//std::cout << point_map.find(cur_point)->second << " " << std::string(keys.begin(),keys.end()) <<" " << steps << '\n';
+	/*	if(std::string(keys.begin(),keys.end()) == "ghirux"){
+		
+			for(auto &ve : visited_elements){
+				std::cout << ve.first << " " << ve.second << " ";
+			}
+			std::cout << '\n'; 
+			return min_steps;
+		}*/
 		if (keys.size() == keys_to_find.size()) {
 			if (steps < min_steps) {
 				min_steps = steps;
@@ -287,14 +323,14 @@ int find_min_steps(const std::unordered_map<Point, char> &point_map, std::unorde
 			//   auto next_moves = get_next_moves(pmap, cur_point, keys, locks);
 			next_moves = get_next_moves_pre(point_map, reach_map, POI_map, cur_point, keys, locks, next_moves, visited);
 			//    std::cout << cur_point << " :";
-			for (auto [next_point, next_cost] : next_moves) {
+			for (auto [next_point, next_cost, needed_locks] : next_moves) {
 				//    std::cout << next_point << ";";
 
 				// std::unordered_map<Point, char> new_pmap = pmap;
 				auto found = point_map.find(next_point);
 				assert(found != point_map.end());
-				std::unordered_set<char> new_keys = keys;
-				std::unordered_set<char> new_locks = locks;
+				std::set<char> new_keys = keys;
+				std::set<char> new_locks = locks;
 				if (is_key(found->second)) {
 					new_keys.insert(found->second);
 				}
@@ -304,7 +340,29 @@ int find_min_steps(const std::unordered_map<Point, char> &point_map, std::unorde
 				// new_pmap[next_point] = '.';
 				auto next_steps = steps + next_cost;
 				ExploreElement next_el { new_keys, new_locks, next_point, next_steps };
+				auto n_keys = std::string(new_keys.begin(),new_keys.end());
+				if(n_keys == "gis"){
+					std::cout << "debug";
+				}
+				auto v_found= visited_elements.find(n_keys) ;
+				bool not_all_locks = true;
+				if ( v_found != visited_elements.end()) {
+					auto other_keys = v_found->second.first;
+					for (auto l : new_locks){
+						if(other_keys.find(l) == std::string::npos){
+							not_all_locks = false;
+							break;
+						}
+					}
+					if(not_all_locks and next_steps >= v_found->second.second){
+						continue;
+					}	
+				}
 				deq.push(next_el);
+				auto n_locks = std::string(new_locks.begin(),new_locks.end());
+				visited_elements[n_keys] = {n_locks,next_el.steps};
+				
+				
 			}
 			//  std::cout << "\n";
 		}
@@ -314,7 +372,7 @@ int find_min_steps(const std::unordered_map<Point, char> &point_map, std::unorde
 }
 
 Point parse_input(std::string const &filename, std::unordered_map<Point, char> &point_map, std::unordered_map<char, Point> &POI_map,
-		std::unordered_set<char> &all_keys, std::unordered_set<char> &all_locks) {
+		std::set<char> &all_keys, std::set<char> &all_locks) {
 	std::ifstream infile(filename);
 	if (not infile.is_open()) {
 		std::cerr << "can't open file " << filename;
@@ -365,18 +423,18 @@ Point parse_input(std::string const &filename, std::unordered_map<Point, char> &
 
 void print_reach_map(std::unordered_map<Point, std::vector<PointCost>> const &reach_map ,std::unordered_map<Point, char> &point_map ){
 	for (auto [origin, dsts] : reach_map) {
-		std::cout << origin << " " << point_map[origin] << "-";
-		for (auto dst : dsts) {
+		std::cout << origin << " " << point_map[origin] << ": ";
+		for (auto const &dst : dsts) {
 			std::cout << point_map[dst.point] << " " << dst << " ";
 		}
 		std::cout << "\n";
 	}
 }
 
-std::unordered_map<Point, std::vector<PointCost>> create_reach_map(const std::unordered_map<Point, char> &point_map,
+std::unordered_map<Point, std::vector<PointCost>>   create_reach_map(const std::unordered_map<Point, char> &point_map,
 		std::unordered_map<char, Point> &POI_map) {
-	std::unordered_set<char> keys { };
-	std::unordered_set<char> locks { };
+	std::set<char> keys { };
+	std::set<char> locks { };
 	std::unordered_map<Point, std::vector<PointCost>> reach_map { };
 	for (auto [src_key, src_point] : POI_map) {
 		reach_map.insert( { src_point, std::vector<PointCost> { } });
@@ -384,8 +442,9 @@ std::unordered_map<Point, std::vector<PointCost>> create_reach_map(const std::un
 		if (is_key(src_key)) {
 			keys.insert(src_key);
 		}
+		std::cout << src_key << src_point << std::endl;
 		auto next_moves = get_next_moves(point_map, src_point, keys, locks);
-		for (auto next_move : next_moves) {
+		for (auto const &next_move : next_moves) {
 			reach_map.find(src_point)->second.push_back(next_move);
 		}
 	}
@@ -394,16 +453,16 @@ std::unordered_map<Point, std::vector<PointCost>> create_reach_map(const std::un
 
 #ifndef TESTING
 int main() {
-	system("pwd");
-	constexpr auto filename { "../day18/input/input_18_1.txt" };
+	std::string base = "/home/andreas/githubprojects/AdventOfCode2019/";
+	auto filename {base +  "./build/input/input_18.txt" };
 	std::unordered_map<Point, char> point_map;
-	std::unordered_set<char> keys_to_find;
-	std::unordered_set<char> all_locks;
+	std::set<char> keys_to_find;
+	std::set<char> all_locks;
 	std::unordered_map<char, Point> POI_map;
 	auto start = parse_input(filename, point_map, POI_map, keys_to_find, all_locks);
 	auto reach_map = create_reach_map(point_map, POI_map);
 	for (auto [origin, dsts] : reach_map) {
-		std::cout << origin << " " << point_map[origin] << "-";
+		std::cout << origin << " " << point_map[origin] << ":";
 		for (auto dst : dsts) {
 			std::cout << point_map[dst.point] << " " << dst << " ";
 		}
