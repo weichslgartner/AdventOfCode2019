@@ -79,8 +79,8 @@ struct ExploreElement {
 
 	bool operator==(const ExploreElement &other) const {
 		return  std::string( keys.begin(), keys.end()) ==  std::string( other.keys.begin(), other.keys.end()) &&
-				std::string( locks.begin(), locks.end()) ==  std::string( other.locks.begin(), other.locks.end());
-				//&&	cur_point == other.cur_point;
+				//std::string( locks.begin(), locks.end()) ==  std::string( other.locks.begin(), other.locks.end());
+				cur_point == other.cur_point;
 	}
 };
 
@@ -94,11 +94,8 @@ namespace std {
 template<>
 struct hash<ExploreElement> {
 	std::size_t operator()(const ExploreElement &e) const {
-		//std::size_t val { 0 };
 		std::string keys = std::string( e.keys.begin(), e.keys.end());
-		std::string locks = std::string( e.locks.begin(), e.locks.end());
-		std::size_t val = std::hash<std::string>{}(keys) ^ std::hash<std::string>{}(locks) ;  
-		return val;
+		return std::hash<std::string>{}(keys) ^ std::hash<Point>{}(e.cur_point) ;  
 	}
 };
 }
@@ -106,7 +103,7 @@ struct hash<ExploreElement> {
 
 struct LessThanExploreElement {
 	bool operator()(const ExploreElement &lhs, const ExploreElement &rhs) const {
-		return lhs.keys.size()*10+lhs.locks.size() + lhs.steps  >  rhs.keys.size()*10+rhs.locks.size() + rhs.steps;
+		return lhs.keys.size()*100+ lhs.steps  >  rhs.keys.size()*100 + rhs.steps;
 	}
 };
 struct PointCmp {
@@ -230,11 +227,12 @@ std::vector<PointCost> get_next_moves_pre(const std::unordered_map<Point, char> 
 			// found a  new lock where we have the key
 			auto need_key = std::tolower(dst_type);
 			if (keys.find(need_key) != keys.end()) {
-				result.push_back(PointCost { dst_point, dst_costs });
+				result.push_back(PointCost { dst_point, dst_costs,needed_locks });
 			}
 			
 		}
-		result.push_back(PointCost { dst_point, dst_costs });
+
+		result.push_back(PointCost { dst_point, dst_costs,needed_locks });
 		
 		
 	}
@@ -290,28 +288,24 @@ int find_min_steps(const std::unordered_map<Point, char> &point_map, std::set<ch
 	deq.push(el);
 	std::vector<PointCost> next_moves;
 	std::set<char> visited;
-	std::unordered_map<std::string,std::pair<std::string,int>> visited_elements{};
-	int min_steps { 4845 };  // 4844 too high 6768 too high INT32_MAX
+	std::unordered_map<ExploreElement,int> visited_elements{};
+	int min_steps { 4280 };  // 4844 too high  6768 too high INT32_MAX wrong 4280
 	while (!deq.empty()) {
 		auto el = deq.top();
 		deq.pop();
 
 		
 		auto [keys, locks, cur_point, steps] = el;
-		std::cout << point_map.find(cur_point)->second  << " " << el << '\n'; 
-		//std::cout << point_map.find(cur_point)->second << " " << std::string(keys.begin(),keys.end()) <<" " << steps << '\n';
-	/*	if(std::string(keys.begin(),keys.end()) == "ghirux"){
-		
-			for(auto &ve : visited_elements){
-				std::cout << ve.first << " " << ve.second << " ";
-			}
-			std::cout << '\n'; 
-			return min_steps;
-		}*/
+		std::cout << cur_point << " " << point_map.find(cur_point)->second << " " << std::string(keys.begin(),keys.end()) <<" " << steps << '\n';
+		/* for(auto &ve : visited_elements){
+			std::cout << ve.first << " " << ve.second << " ";
+		}
+		std::cout << '\n'; */
 		if (keys.size() == keys_to_find.size()) {
 			if (steps < min_steps) {
 				min_steps = steps;
 				std::cout << min_steps << " \n";
+				return min_steps;
 			}
 
 		} else if (steps > min_steps) {  // 6768
@@ -340,27 +334,14 @@ int find_min_steps(const std::unordered_map<Point, char> &point_map, std::set<ch
 				// new_pmap[next_point] = '.';
 				auto next_steps = steps + next_cost;
 				ExploreElement next_el { new_keys, new_locks, next_point, next_steps };
-				auto n_keys = std::string(new_keys.begin(),new_keys.end());
-				if(n_keys == "gis"){
-					std::cout << "debug";
+				if (visited_elements.find(next_el) != visited_elements.end() && visited_elements[next_el] <= next_el.steps){
+					continue;
 				}
-				auto v_found= visited_elements.find(n_keys) ;
-				bool not_all_locks = true;
-				if ( v_found != visited_elements.end()) {
-					auto other_keys = v_found->second.first;
-					for (auto l : new_locks){
-						if(other_keys.find(l) == std::string::npos){
-							not_all_locks = false;
-							break;
-						}
-					}
-					if(not_all_locks and next_steps >= v_found->second.second){
-						continue;
-					}	
+				if (next_el.steps > min_steps){
+					continue;
 				}
 				deq.push(next_el);
-				auto n_locks = std::string(new_locks.begin(),new_locks.end());
-				visited_elements[n_keys] = {n_locks,next_el.steps};
+				visited_elements[next_el] =next_el.steps;
 				
 				
 			}
