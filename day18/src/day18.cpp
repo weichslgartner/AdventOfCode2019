@@ -17,7 +17,6 @@
 #include <unordered_set>
 #include <vector>
 
-
 enum class Direction { NORTH = 1, SOUTH = 2, WEST = 3, EAST = 4 };
 std::array<Direction const, 4> const DIRECTIONS = {
     Direction::NORTH, Direction::SOUTH, Direction::WEST, Direction::EAST};
@@ -318,13 +317,14 @@ int find_min_steps(
       // do nothing
     } else {
       next_moves.clear();
-      // part a
+      
       if (is_part_a) {
+		// part a
         next_moves = get_next_moves_pre(point_map, reach_map, cur_point[0],
                                         keys, locks, next_moves);
-        // part b
+        
       } else {
-
+		// part b
         for (auto &p : cur_point) {
           next_moves = get_next_moves_pre(point_map, reach_map, p, keys, locks,
                                           next_moves);
@@ -379,8 +379,7 @@ int find_min_steps(
 std::vector<Point> parse_input(std::string const &filename,
                                std::unordered_map<Point, char> &point_map,
                                std::unordered_map<char, Point> &POI_map,
-                               std::set<char> &all_keys,
-                               std::set<char> &all_locks) {
+                               std::set<char> &all_keys) {
   std::ifstream infile(filename);
   if (not infile.is_open()) {
     std::cerr << "can't open file " << filename;
@@ -419,7 +418,6 @@ std::vector<Point> parse_input(std::string const &filename,
         POI_map.insert({a, Point{x, y}});
       }
       if (a >= 'A' && a <= 'Z') {
-        all_locks.insert(a);
         POI_map.insert({a, Point{x, y}});
       }
       x++;
@@ -467,10 +465,8 @@ create_reach_map(const std::unordered_map<Point, char> &point_map,
 int solve(std::string const &filename) {
   std::unordered_map<Point, char> point_map;
   std::set<char> keys_to_find;
-  std::set<char> all_locks;
   std::unordered_map<char, Point> POI_map;
-  auto start =
-      parse_input(filename, point_map, POI_map, keys_to_find, all_locks);
+  auto start = parse_input(filename, point_map, POI_map, keys_to_find);
   auto reach_map = create_reach_map(point_map, POI_map);
   return find_min_steps(point_map, keys_to_find, reach_map, start);
 }

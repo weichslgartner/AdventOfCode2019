@@ -1,4 +1,4 @@
-#define TESTING
+//#define TESTING
 #include "../src/day18.cpp"
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
