@@ -1,5 +1,4 @@
 #include <array>
-#include <assert.h>
 #include <cctype>
 #include <cstddef>
 #include <deque>
@@ -18,7 +17,6 @@
 #include <unordered_set>
 #include <vector>
 
-constexpr bool VERBOSE{false};
 
 enum class Direction { NORTH = 1, SOUTH = 2, WEST = 3, EAST = 4 };
 std::array<Direction const, 4> const DIRECTIONS = {
@@ -148,9 +146,9 @@ Point dir_to_point(const Point &p1, Direction dir) {
   return Point{-1, -1};
 }
 
-bool is_key(char c) { return c >= 'a' && c <= 'z'; }
+static inline bool is_key(char c) { return c >= 'a' && c <= 'z'; }
 
-bool is_lock(char c) { return c >= 'A' && c <= 'Z'; }
+static inline bool is_lock(char c) { return c >= 'A' && c <= 'Z'; }
 
 std::vector<Point>
 get_avail_neighbors(const std::unordered_map<Point, char> &point_map,
@@ -188,7 +186,6 @@ std::vector<PointCost> get_next_moves_pre(
     const Point &point, const std::set<char> &keys, const std::set<char> &locks,
     std::vector<PointCost> &result) {
   auto next_moves = reach_map.find(point)->second;
-
   for (auto &move : next_moves) {
     auto [dst_point, dst_costs, needed_locks, passed_keys] = move;
     auto dst_type = point_map.find(dst_point)->second;
@@ -226,7 +223,6 @@ std::vector<PointCost> get_next_moves_pre(
             PointCost{dst_point, dst_costs, needed_locks, passed_keys});
       }
     }
-
     result.push_back(
         PointCost{dst_point, dst_costs, needed_locks, passed_keys});
   }
@@ -307,7 +303,7 @@ int find_min_steps(
   std::vector<PointCost> next_moves;
   std::set<char> visited;
   std::unordered_map<ExploreElement, int> visited_elements{};
-  int min_steps{4280}; // 4844 too high  6768 too high INT32_MAX wrong 4280
+  int min_steps{INT32_MAX}; // 4844 too high  6768 too high INT32_MAX wrong 4280
   while (!deq.empty()) {
     auto el = deq.top();
     deq.pop();
@@ -315,7 +311,7 @@ int find_min_steps(
     if (keys.size() == keys_to_find.size()) {
       if (steps < min_steps) {
         min_steps = steps;
-        //std::cout << min_steps << " \n";
+        // std::cout << min_steps << " \n";
         return min_steps;
       }
     } else if (steps > min_steps) {
@@ -326,7 +322,7 @@ int find_min_steps(
       if (is_part_a) {
         next_moves = get_next_moves_pre(point_map, reach_map, cur_point[0],
                                         keys, locks, next_moves);
-	  //part b
+        // part b
       } else {
 
         for (auto &p : cur_point) {
@@ -334,7 +330,7 @@ int find_min_steps(
                                           next_moves);
         }
       }
-      //std::cout << el << " " << steps << '\n';
+      // std::cout << el << " " << steps << '\n';
       for (auto [next_point, next_cost, needed_locks, passed_keys] :
            next_moves) {
         auto found = point_map.find(next_point);
@@ -468,7 +464,7 @@ create_reach_map(const std::unordered_map<Point, char> &point_map,
   return reach_map;
 }
 
-int part2(std::string const &filename) {
+int solve(std::string const &filename) {
   std::unordered_map<Point, char> point_map;
   std::set<char> keys_to_find;
   std::set<char> all_locks;
@@ -480,8 +476,7 @@ int part2(std::string const &filename) {
 }
 
 int main() {
-  std::string base = "/home/andreas/githubprojects/AdventOfCode2019/";
-  std::cout << "Part 1: " << part2(base + "./build/input/input_18.txt" ) << '\n';
-  std::cout << "Part 2: " << part2(base + "./build/input/input_18_part2.txt") << '\n';
+  fmt::print("Part 1: {}\n", solve("./input/input_18.txt"));
+  fmt::print("Part 2: {}\n", solve("./input/input_18_part2.txt"));
   return 0;
 }
